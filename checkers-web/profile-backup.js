@@ -21,6 +21,14 @@
     return balanceUnits;
   }
 
+  function removeProfile(profiles, profileId) {
+    const removedProfile = profiles.find(({ id }) => id === profileId) || null;
+    return {
+      profiles: removedProfile ? profiles.filter(({ id }) => id !== profileId) : profiles,
+      removedProfile,
+    };
+  }
+
   function createScoreBackup(profiles, exportedAt = new Date().toISOString()) {
     return {
       format: BACKUP_FORMAT,
@@ -99,6 +107,7 @@
     mergeScoreBackup,
     normalizeName,
     parseScoreBackup,
+    removeProfile,
     unitsToBalance,
   };
 

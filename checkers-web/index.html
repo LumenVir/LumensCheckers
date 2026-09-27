@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="适合亲友在同一台设备上轮流玩的二至六人跳棋。">
-  <title>闪光跳棋 | Lumen's Checker v3.3</title>
+  <title>闪光跳棋 | Lumen's Checker v3.5</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="style.css?v=3.3">
+  <link rel="stylesheet" href="style.css?v=3.5">
 </head>
 <body>
   <main class="app-shell" id="checkers-app">
@@ -233,7 +233,7 @@
 
   <dialog class="setup-picker-dialog" id="setup-player-dialog" aria-labelledby="setup-player-dialog-title">
     <section>
-      <h2 id="setup-player-dialog-title">这个席位谁来玩？</h2>
+      <h2 id="setup-player-dialog-title" tabindex="-1" autofocus>这个席位谁来玩？</h2>
       <p id="setup-player-dialog-lead">选择已有玩家，或者输入一个新昵称。</p>
       <div class="setup-profile-grid" id="setup-profile-list"></div>
       <div class="setup-new-player">
@@ -253,6 +253,21 @@
     </section>
   </dialog>
 
+  <dialog class="score-dialog" id="score-vault-access-dialog" aria-labelledby="score-vault-access-title">
+    <form id="score-vault-access-form">
+      <h2 id="score-vault-access-title">打开积分保险箱</h2>
+      <p>请输入保险箱密码。</p>
+      <label>密码
+        <input id="score-vault-pin" type="password" inputmode="numeric" autocomplete="off" maxlength="6" required>
+      </label>
+      <p class="score-dialog-error" id="score-vault-access-status" aria-live="polite"></p>
+      <div class="score-dialog-actions">
+        <button class="button button-ghost" type="button" id="cancel-score-vault-access">取消</button>
+        <button class="button button-primary" type="submit" id="submit-score-vault-access">解锁</button>
+      </div>
+    </form>
+  </dialog>
+
   <dialog class="score-dialog" id="score-profile-dialog" aria-labelledby="score-profile-dialog-title">
     <form id="score-profile-form">
       <h2 id="score-profile-dialog-title">修改玩家</h2>
@@ -267,6 +282,33 @@
       <div class="score-dialog-actions">
         <button class="button button-ghost" type="button" id="cancel-score-profile">取消</button>
         <button class="button button-primary" type="submit">保存</button>
+      </div>
+      <button class="button button-danger-soft score-profile-delete" type="button" id="delete-score-profile" hidden>删除玩家</button>
+    </form>
+  </dialog>
+
+  <dialog class="confirm-dialog" id="score-delete-confirm-dialog" aria-labelledby="score-delete-confirm-title">
+    <form>
+      <h2 id="score-delete-confirm-title">确认删除这位玩家？</h2>
+      <p id="score-delete-confirm-message">玩家档案和长期金币将从本机删除。</p>
+      <div class="confirm-actions">
+        <button class="button button-ghost" type="button" id="cancel-score-delete-confirm">取消</button>
+        <button class="button button-danger-soft" type="button" id="continue-score-delete">继续删除</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="score-dialog" id="score-delete-final-dialog" aria-labelledby="score-delete-final-title">
+    <form id="score-delete-final-form">
+      <h2 id="score-delete-final-title">最后确认</h2>
+      <p>请输入大写的 DELETE，确认永久删除这位玩家及其长期金币。</p>
+      <label>确认文字
+        <input id="score-delete-confirm-text" autocomplete="off" autocapitalize="characters" spellcheck="false" required>
+      </label>
+      <p class="score-dialog-error" id="score-delete-final-error" aria-live="polite"></p>
+      <div class="score-dialog-actions">
+        <button class="button button-ghost" type="button" id="cancel-score-delete-final">取消</button>
+        <button class="button button-danger-soft" type="submit">永久删除</button>
       </div>
     </form>
   </dialog>
@@ -307,9 +349,10 @@
     </section>
   </dialog>
 
-  <script src="rules.js?v=3.3"></script>
-  <script src="profile-backup.js?v=3.3"></script>
-  <script src="vendor/canvas-confetti.browser.min.js?v=3.3"></script>
-  <script src="app.js?v=3.3"></script>
+  <script src="rules.js?v=3.5"></script>
+  <script src="profile-backup.js?v=3.5"></script>
+  <script src="vault-access.js?v=3.5"></script>
+  <script src="vendor/canvas-confetti.browser.min.js?v=3.5"></script>
+  <script src="app.js?v=3.5"></script>
 </body>
 </html>

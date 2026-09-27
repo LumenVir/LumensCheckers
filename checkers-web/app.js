@@ -33,8 +33,10 @@
     createScoreBackup,
     mergeScoreBackup,
     parseScoreBackup,
+    removeProfile,
     unitsToBalance,
   } = window.CheckersProfileBackup;
+  const { normalizeState: normalizeVaultAccessState, recordAttempt: recordVaultAttempt, verifyPin: verifyVaultPin } = window.CheckersVaultAccess;
 
   const root = document.getElementById('checkers-app');
   const $ = (selector) => root.querySelector(selector);
@@ -47,6 +49,12 @@
     scoreVaultPlayers: $('#score-vault-players'),
     scoreVaultCount: $('#score-vault-count'),
     scoreVaultStatus: $('#score-vault-status'),
+    vaultAccessDialog: document.getElementById('score-vault-access-dialog'),
+    vaultAccessForm: document.getElementById('score-vault-access-form'),
+    vaultPin: document.getElementById('score-vault-pin'),
+    vaultAccessStatus: document.getElementById('score-vault-access-status'),
+    vaultAccessSubmit: document.getElementById('submit-score-vault-access'),
+    vaultAccessCancel: document.getElementById('cancel-score-vault-access'),
     addScoreProfile: $('#add-score-profile'),
     exportScoreBackup: $('#export-score-backup'),
     importScoreBackup: $('#import-score-backup'),
@@ -94,12 +102,23 @@
     scoreProfileBalance: document.getElementById('score-profile-balance'),
     scoreProfileError: document.getElementById('score-profile-error'),
     cancelScoreProfile: document.getElementById('cancel-score-profile'),
+    deleteScoreProfile: document.getElementById('delete-score-profile'),
+    scoreDeleteConfirmDialog: document.getElementById('score-delete-confirm-dialog'),
+    scoreDeleteConfirmMessage: document.getElementById('score-delete-confirm-message'),
+    cancelScoreDeleteConfirm: document.getElementById('cancel-score-delete-confirm'),
+    continueScoreDelete: document.getElementById('continue-score-delete'),
+    scoreDeleteFinalDialog: document.getElementById('score-delete-final-dialog'),
+    scoreDeleteFinalForm: document.getElementById('score-delete-final-form'),
+    scoreDeleteConfirmText: document.getElementById('score-delete-confirm-text'),
+    scoreDeleteFinalError: document.getElementById('score-delete-final-error'),
+    cancelScoreDeleteFinal: document.getElementById('cancel-score-delete-final'),
     scoreImportDialog: document.getElementById('score-import-dialog'),
     scoreImportForm: document.getElementById('score-import-form'),
     scoreImportSummary: document.getElementById('score-import-summary'),
     scoreImportPreview: document.getElementById('score-import-preview'),
     cancelScoreImport: document.getElementById('cancel-score-import'),
     setupPlayerDialog: document.getElementById('setup-player-dialog'),
+    setupPlayerDialogTitle: document.getElementById('setup-player-dialog-title'),
     setupPlayerDialogLead: document.getElementById('setup-player-dialog-lead'),
     setupProfileList: document.getElementById('setup-profile-list'),
     setupNewPlayerName: document.getElementById('setup-new-player-name'),
@@ -113,7 +132,7 @@
 
   const ALL_CAMPS = CAMP_ORDER;
   const PROFILE_STORAGE_KEY = 'family-checkers-player-profiles-v1';
-  const LAST_LINEUP_STORAGE_KEY = 'family-checkers-last-lineup-v1';
+  const VAULT_ACCESS_STORAGE_KEY = 'family-checkers-vault-access-v1';
   const INITIAL_BALANCE_UNITS = 100;
   const UNDO_FEE_UNITS = 5;
   const COMPUTER_MAX_ROUTES = 120;
@@ -123,17 +142,18 @@
   const BOARD_WIDTH = 760;
   const BOARD_HEIGHT = 760;
   const COLOR_META = {
-    red: { colorName: '红色', value: '#e95122' },
+    arielRed: { colorName: '人鱼红发', value: '#b72b4a' },
+    rapunzelGold: { colorName: '乐佩金黄', value: '#edc555' },
+    plutoOrange: { colorName: '布鲁托橙', value: '#d46a00' },
     purple: { colorName: '紫色', value: '#8239ee' },
+    peachPink: { colorName: '桃子公主粉', value: '#f399b1' },
+    red: { colorName: '红色', value: '#e95122' },
     green: { colorName: '绿色', value: '#2bb7b4' },
     donaldBlue: { colorName: '唐老鸭蓝', value: '#2d7eb6' },
     goofyGreen: { colorName: '高飞绿', value: '#2f9235' },
-    plutoOrange: { colorName: '布鲁托橙', value: '#d46a00' },
     mickeyBlack: { colorName: '米奇黑', value: '#252733' },
     snowBlue: { colorName: '白雪深蓝', value: '#003da5' },
-    arielRed: { colorName: '人鱼红发', value: '#b72b4a' },
     cinderellaBlue: { colorName: '灰姑娘蓝', value: '#7894ad' },
-    rapunzelGold: { colorName: '乐佩金黄', value: '#edc555' },
   };
   let players = createPlayerCampLayout(3).map((camp, index) => ({
     ...COLOR_META[['red', 'purple', 'green'][index]],
@@ -197,6 +217,7 @@
   let activeSetupPlayerEntry = null;
   let activeSetupColorEntry = null;
   let editingProfileId = null;
+  let pendingDeleteProfileId = null;
   let pendingImportedPlayers = [];
 
   const now = () => players[turn];
@@ -265,45 +286,6 @@
       saveProfiles();
     }
     return profile;
-  }
-
-  function loadLastLineup() {
-    try {
-      const saved = JSON.parse(window.localStorage.getItem(LAST_LINEUP_STORAGE_KEY) || 'null');
-      if (
-        !saved
-        || ![2, 3, 4, 5, 6].includes(saved.playerCount)
-        || !Array.isArray(saved.slots)
-      ) return null;
-      return saved;
-    } catch {
-      return null;
-    }
-  }
-
-  function saveLastLineup(assignments) {
-    try {
-      window.localStorage.setItem(LAST_LINEUP_STORAGE_KEY, JSON.stringify({
-        playerCount: assignments.length,
-        slots: assignments.map(({
-          profile,
-          color,
-          kind,
-          name,
-          humanName,
-          humanProfileId,
-        }) => ({
-          kind,
-          profileId: profile?.id || null,
-          name: kind === 'computer' ? name : null,
-          humanName: kind === 'computer' ? humanName : null,
-          humanProfileId: kind === 'computer' ? humanProfileId : null,
-          color,
-        })),
-      }));
-    } catch {
-      // 阵容记忆失败不影响本局开始。
-    }
   }
 
   function resetTurnLedger() {
@@ -1080,6 +1062,107 @@
     ui.closeScoreVault.focus();
   }
 
+  let vaultAccessTimer = null;
+  let vaultAccessRequestId = 0;
+
+  function readVaultAccessState() {
+    try {
+      return { available: true, state: JSON.parse(window.localStorage.getItem(VAULT_ACCESS_STORAGE_KEY) || 'null') };
+    } catch {
+      return { available: false, state: null };
+    }
+  }
+
+  function saveVaultAccessState(state) {
+    try {
+      window.localStorage.setItem(VAULT_ACCESS_STORAGE_KEY, JSON.stringify(state));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function refreshVaultAccess() {
+    const saved = readVaultAccessState();
+    const access = normalizeVaultAccessState(saved.state, Date.now());
+    const { lockedUntil } = access;
+    const locked = lockedUntil > 0;
+    ui.vaultPin.disabled = !saved.available || locked;
+    ui.vaultAccessSubmit.disabled = !saved.available || locked;
+    ui.vaultAccessStatus.textContent = !saved.available
+      ? '浏览器未允许保存安全状态，暂时无法打开保险箱。'
+      : locked
+        ? `连续输错 3 次，保险箱已锁定。约 ${Math.ceil((lockedUntil - Date.now()) / 60000)} 分钟后可重试。`
+        : access.failures.length
+          ? `密码错误。5 分钟内还可尝试 ${3 - access.failures.length} 次。`
+          : '';
+    return saved.available && !locked;
+  }
+
+  function closeVaultAccessDialog() {
+    vaultAccessRequestId += 1;
+    if (vaultAccessTimer !== null) window.clearInterval(vaultAccessTimer);
+    vaultAccessTimer = null;
+    if (ui.vaultAccessDialog.open) ui.vaultAccessDialog.close();
+    else ui.vaultAccessDialog.removeAttribute('open');
+    ui.vaultPin.value = '';
+    ui.openScoreVault.focus();
+  }
+
+  function requestScoreVaultAccess() {
+    ui.vaultPin.value = '';
+    if (typeof ui.vaultAccessDialog.showModal === 'function') ui.vaultAccessDialog.showModal();
+    else ui.vaultAccessDialog.setAttribute('open', '');
+    if (refreshVaultAccess()) ui.vaultPin.focus();
+    else ui.vaultAccessCancel.focus();
+    vaultAccessTimer = window.setInterval(refreshVaultAccess, 1000);
+  }
+
+  async function submitScoreVaultAccess() {
+    const saved = readVaultAccessState();
+    const now = Date.now();
+    if (!saved.available || normalizeVaultAccessState(saved.state, now).lockedUntil) {
+      refreshVaultAccess();
+      return;
+    }
+    const requestId = ++vaultAccessRequestId;
+    const pin = ui.vaultPin.value;
+    ui.vaultAccessSubmit.disabled = true;
+    try {
+      const correct = await verifyVaultPin(pin);
+      if (requestId !== vaultAccessRequestId || !ui.vaultAccessDialog.open) return;
+      const latest = readVaultAccessState();
+      if (!latest.available) {
+        refreshVaultAccess();
+        return;
+      }
+      const result = recordVaultAttempt(latest.state, correct, Date.now());
+      if (!saveVaultAccessState(result.state)) {
+        refreshVaultAccess();
+        return;
+      }
+      ui.vaultPin.value = '';
+      if (result.status === 'unlocked') {
+        closeVaultAccessDialog();
+        openScoreVault();
+      } else if (result.status === 'wrong') {
+        ui.vaultAccessStatus.textContent = `密码错误。5 分钟内还可尝试 ${result.remaining} 次。`;
+        ui.vaultPin.focus();
+      } else {
+        refreshVaultAccess();
+        ui.vaultAccessCancel.focus();
+      }
+    } catch {
+      ui.vaultAccessStatus.textContent = '无法验证密码，请稍后再试。';
+    } finally {
+      if (ui.vaultAccessDialog.open) {
+        const current = readVaultAccessState();
+        ui.vaultAccessSubmit.disabled = !current.available
+          || Boolean(normalizeVaultAccessState(current.state, Date.now()).lockedUntil);
+      }
+    }
+  }
+
   function closeScoreVault() {
     ui.scoreVault.hidden = true;
     ui.form.hidden = false;
@@ -1093,6 +1176,7 @@
     ui.scoreProfileName.value = profile?.name || '';
     ui.scoreProfileBalance.value = unitsToBalance(profile?.balanceUnits ?? INITIAL_BALANCE_UNITS).toFixed(1);
     ui.scoreProfileError.textContent = '';
+    ui.deleteScoreProfile.hidden = !profile;
     if (typeof ui.scoreProfileDialog.showModal === 'function') ui.scoreProfileDialog.showModal();
     else ui.scoreProfileDialog.setAttribute('open', '');
     ui.scoreProfileName.focus();
@@ -1139,6 +1223,91 @@
     closeScoreProfileDialog();
     refreshProfileViews();
     ui.scoreVaultStatus.textContent = `${name}的长期金币已保存。`;
+  }
+
+  function closeScoreDeleteConfirmDialog() {
+    if (ui.scoreDeleteConfirmDialog.open) ui.scoreDeleteConfirmDialog.close();
+    else ui.scoreDeleteConfirmDialog.removeAttribute('open');
+    pendingDeleteProfileId = null;
+  }
+
+  function requestScoreProfileDelete() {
+    const profile = profiles.find(({ id }) => id === editingProfileId);
+    if (!profile) return;
+    const profileId = profile.id;
+    const profileName = profile.name;
+    closeScoreProfileDialog();
+    pendingDeleteProfileId = profileId;
+    ui.scoreDeleteConfirmMessage.textContent = `${profileName}的玩家档案和长期金币将从本机删除。`;
+    if (typeof ui.scoreDeleteConfirmDialog.showModal === 'function') ui.scoreDeleteConfirmDialog.showModal();
+    else ui.scoreDeleteConfirmDialog.setAttribute('open', '');
+    ui.cancelScoreDeleteConfirm.focus();
+  }
+
+  function continueScoreProfileDelete() {
+    if (!profiles.some(({ id }) => id === pendingDeleteProfileId)) {
+      closeScoreDeleteConfirmDialog();
+      return;
+    }
+    if (ui.scoreDeleteConfirmDialog.open) ui.scoreDeleteConfirmDialog.close();
+    else ui.scoreDeleteConfirmDialog.removeAttribute('open');
+    ui.scoreDeleteConfirmText.value = '';
+    ui.scoreDeleteFinalError.textContent = '';
+    if (typeof ui.scoreDeleteFinalDialog.showModal === 'function') ui.scoreDeleteFinalDialog.showModal();
+    else ui.scoreDeleteFinalDialog.setAttribute('open', '');
+    ui.scoreDeleteConfirmText.focus();
+  }
+
+  function closeScoreDeleteFinalDialog() {
+    if (ui.scoreDeleteFinalDialog.open) ui.scoreDeleteFinalDialog.close();
+    else ui.scoreDeleteFinalDialog.removeAttribute('open');
+    ui.scoreDeleteConfirmText.value = '';
+    ui.scoreDeleteFinalError.textContent = '';
+    pendingDeleteProfileId = null;
+  }
+
+  function clearDeletedProfileFromSetup(profileId) {
+    playerEntries.forEach((entry) => {
+      if (entry.nameInput.dataset.profileId === profileId) {
+        entry.nameInput.value = '';
+        delete entry.nameInput.dataset.profileId;
+      }
+      if (entry.nameInput.dataset.humanProfileId === profileId) {
+        entry.nameInput.dataset.humanName = '';
+        entry.nameInput.dataset.humanProfileId = '';
+      }
+      if (entry.nameInput.dataset.inactiveProfileId === profileId) {
+        entry.nameInput.dataset.inactiveName = '';
+        entry.nameInput.dataset.inactiveProfileId = '';
+      }
+    });
+  }
+
+  function deleteScoreProfile() {
+    if (ui.scoreDeleteConfirmText.value !== 'DELETE') {
+      ui.scoreDeleteFinalError.textContent = '请输入大写的 DELETE。';
+      ui.scoreDeleteConfirmText.focus();
+      return;
+    }
+    const removal = removeProfile(profiles, pendingDeleteProfileId);
+    const profile = removal.removedProfile;
+    if (!profile) {
+      ui.scoreDeleteFinalError.textContent = '这位玩家已经不存在。';
+      return;
+    }
+    const previousProfiles = profiles;
+    profiles = removal.profiles;
+    if (!saveProfiles()) {
+      profiles = previousProfiles;
+      ui.scoreDeleteFinalError.textContent = '浏览器未允许保存数据，玩家没有被删除。';
+      return;
+    }
+    clearDeletedProfileFromSetup(profile.id);
+    if (ui.scoreDeleteFinalDialog.open) ui.scoreDeleteFinalDialog.close();
+    else ui.scoreDeleteFinalDialog.removeAttribute('open');
+    pendingDeleteProfileId = null;
+    refreshProfileViews();
+    ui.scoreVaultStatus.textContent = `${profile.name}的玩家档案和长期金币已删除。`;
   }
 
   function exportScoreBackup() {
@@ -1320,7 +1489,8 @@
     buildProfileCards();
     if (typeof ui.setupPlayerDialog.showModal === 'function') ui.setupPlayerDialog.showModal();
     else ui.setupPlayerDialog.setAttribute('open', '');
-    ui.setupNewPlayerName.focus();
+    if (profiles.length === 0) ui.setupNewPlayerName.focus();
+    else ui.setupPlayerDialogTitle.focus();
   }
 
   function closeSetupPlayerDialog() {
@@ -1340,40 +1510,6 @@
     delete activeSetupPlayerEntry.nameInput.dataset.profileId;
     closeSetupPlayerDialog();
     validateNames();
-  }
-
-  function applyLastLineup() {
-    const lineup = loadLastLineup();
-    if (!lineup) return;
-    const activeProfileIds = new Set(lineup.slots.map(({ profileId }) => profileId));
-    const unusedProfiles = profiles.filter(({ id }) => !activeProfileIds.has(id));
-    playerEntries.forEach((entry, index) => {
-      const slot = index < lineup.playerCount ? lineup.slots[index] : null;
-      if (!slot) {
-        setEntryKind(entry, index < 2 ? 'human' : 'empty');
-        return;
-      }
-      if (slot?.kind === 'computer') {
-        const backupProfile = profiles.find(({ id }) => id === slot.humanProfileId)
-          || (unusedProfiles.length === 1 ? unusedProfiles[0] : null);
-        entry.nameInput.value = backupProfile?.name || slot.humanName || '';
-        if (backupProfile) entry.nameInput.dataset.profileId = backupProfile.id;
-        setEntryKind(entry, 'computer');
-        entry.nameInput.value = slot.name || 'Lumen';
-        if (COLOR_META[slot.color]) entry.colorInput.value = slot.color;
-        return;
-      }
-      setEntryKind(entry, 'human');
-      const profile = profiles.find((candidate) => candidate.id === slot.profileId);
-      if (!profile) {
-        entry.nameInput.value = '';
-        delete entry.nameInput.dataset.profileId;
-        return;
-      }
-      entry.nameInput.value = profile.name;
-      entry.nameInput.dataset.profileId = profile.id;
-      if (COLOR_META[slot.color]) entry.colorInput.value = slot.color;
-    });
   }
 
   function activeColorEntries(excludedEntry = null) {
@@ -1514,8 +1650,6 @@
         ? { id: 'computer-simple', name: assignment.name, balanceUnits: INITIAL_BALANCE_UNITS }
         : resolveProfile(assignment.name, assignment.profileId);
     });
-    saveLastLineup(assignments);
-
     const activeCamps = createPlayerCampLayout(assignments.length);
     players = activeCamps.map((camp, index) => {
       const assignment = assignments[index];
@@ -1895,7 +2029,23 @@
     event.preventDefault();
     closeSetupColorDialog();
   });
-  ui.openScoreVault.addEventListener('click', openScoreVault);
+  ui.openScoreVault.addEventListener('click', requestScoreVaultAccess);
+  ui.vaultAccessForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    submitScoreVaultAccess();
+  });
+  ui.vaultAccessCancel.addEventListener('click', closeVaultAccessDialog);
+  ui.vaultAccessDialog.addEventListener('cancel', (event) => {
+    event.preventDefault();
+    closeVaultAccessDialog();
+  });
+  window.addEventListener('storage', (event) => {
+    if (event.key !== VAULT_ACCESS_STORAGE_KEY) return;
+    if (ui.vaultAccessDialog.open) refreshVaultAccess();
+    if (!ui.scoreVault.hidden && normalizeVaultAccessState(readVaultAccessState().state, Date.now()).lockedUntil) {
+      closeScoreVault();
+    }
+  });
   ui.closeScoreVault.addEventListener('click', closeScoreVault);
   ui.addScoreProfile.addEventListener('click', () => openScoreProfileDialog());
   ui.exportScoreBackup.addEventListener('click', exportScoreBackup);
@@ -1906,9 +2056,25 @@
     saveScoreProfile();
   });
   ui.cancelScoreProfile.addEventListener('click', closeScoreProfileDialog);
+  ui.deleteScoreProfile.addEventListener('click', requestScoreProfileDelete);
   ui.scoreProfileDialog.addEventListener('cancel', (event) => {
     event.preventDefault();
     closeScoreProfileDialog();
+  });
+  ui.cancelScoreDeleteConfirm.addEventListener('click', closeScoreDeleteConfirmDialog);
+  ui.continueScoreDelete.addEventListener('click', continueScoreProfileDelete);
+  ui.scoreDeleteConfirmDialog.addEventListener('cancel', (event) => {
+    event.preventDefault();
+    closeScoreDeleteConfirmDialog();
+  });
+  ui.scoreDeleteFinalForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    deleteScoreProfile();
+  });
+  ui.cancelScoreDeleteFinal.addEventListener('click', closeScoreDeleteFinalDialog);
+  ui.scoreDeleteFinalDialog.addEventListener('cancel', (event) => {
+    event.preventDefault();
+    closeScoreDeleteFinalDialog();
   });
   ui.scoreImportForm.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -2005,7 +2171,6 @@
   buildProfileCards();
   renderScoreVault();
   playerEntries.forEach((entry, index) => setEntryKind(entry, index < 2 ? 'human' : 'empty'));
-  applyLastLineup();
   ensureUniqueActiveColors();
   renderPieces();
   validateNames();

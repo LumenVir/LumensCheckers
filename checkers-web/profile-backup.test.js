@@ -5,6 +5,7 @@ const {
   createScoreBackup,
   mergeScoreBackup,
   parseScoreBackup,
+  removeProfile,
 } = require('./profile-backup');
 
 const profiles = [
@@ -26,6 +27,11 @@ assert.deepEqual(parseScoreBackup(JSON.stringify(backup)).players, [
   { name: '乐乐', balanceUnits: 385 },
   { name: '妈妈', balanceUnits: 225 },
 ]);
+
+const removed = removeProfile(profiles, 'player-1');
+assert.equal(removed.removedProfile.name, '乐乐');
+assert.deepEqual(removed.profiles.map(({ id }) => id), ['player-2']);
+assert.equal(removeProfile(profiles, 'missing').removedProfile, null);
 assert.equal(balanceToUnits(0.1), 1);
 assert.equal(balanceToUnits(18.5), 185);
 assert.equal(balanceToUnits(1.25), null);
