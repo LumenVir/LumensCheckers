@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>闪光跳棋 · 专注对局界面原型</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #111827;
+      --muted: #667085;
+      --paper: #fffdf8;
+      --page: #ebe7df;
+      --line: #cfd3dc;
+      --active: #d9471d;
+      --active-dark: #8d250b;
+      --violet: #7541e8;
+      --teal: #008f91;
+      --gold: #b47500;
+      --button-top: #aeb8c8;
+      --button-bottom: #7f8ba0;
+      font-family: "Avenir Next", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background:
+        radial-gradient(circle at 18% 12%, rgba(255, 255, 255, .8), transparent 34%),
+        var(--page);
+      color: var(--ink);
+    }
+
+    button { font: inherit; touch-action: manipulation; }
+
+    .prototype {
+      display: grid;
+      grid-template-columns: minmax(0, 670px) 276px;
+      gap: 18px;
+      width: min(980px, calc(100vw - 32px));
+      min-height: 736px;
+      margin: 8px auto;
+      align-items: center;
+    }
+
+    .game-main {
+      display: grid;
+      gap: 6px;
+      justify-items: center;
+    }
+
+    .turn-heading {
+      display: flex;
+      min-height: 56px;
+      align-items: center;
+      justify-content: center;
+      gap: 13px;
+      color: var(--ink);
+    }
+
+    .turn-heading i {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--active);
+      box-shadow: 0 0 0 5px #f8d7ce;
+    }
+
+    .turn-heading h1 {
+      margin: 0;
+      font-size: 40px;
+      line-height: 1;
+      letter-spacing: -.04em;
+    }
+
+    .board-shell {
+      position: relative;
+      display: grid;
+      width: 670px;
+      height: 670px;
+      place-items: center;
+      overflow: hidden;
+      border: 2px solid #bfc4ce;
+      border-radius: 32px;
+      background: var(--paper);
+    }
+
+    .board {
+      display: block;
+      width: 640px;
+      height: 640px;
+    }
+
+    .board-line {
+      stroke: #c8cdd6;
+      stroke-width: 1.4;
+    }
+
+    .hole {
+      fill: #fffefa;
+      stroke: #c7ccd5;
+      stroke-width: 1.7;
+    }
+
+    .hole.camp-red { fill: #f9ddd5; }
+    .hole.camp-violet { fill: #e7defb; }
+    .hole.camp-teal { fill: #d7eeee; }
+
+    .piece { stroke: #fffdf8; stroke-width: 4; }
+    .piece.red { fill: var(--active); }
+    .piece.violet { fill: var(--violet); }
+    .piece.teal { fill: var(--teal); }
+    .piece.inactive { opacity: .78; }
+    .piece.selected { stroke: #172033; stroke-width: 5; }
+
+    .landing {
+      fill: none;
+      stroke: var(--active-dark);
+      stroke-width: 2.2;
+      stroke-dasharray: 3 3;
+    }
+
+    .turn-corner {
+      position: absolute;
+      width: 116px;
+      height: 116px;
+      padding: 0;
+      border: 0;
+      background: linear-gradient(145deg, var(--button-top), var(--button-bottom));
+      box-shadow:
+        inset 0 2px 0 rgba(255, 255, 255, .45),
+        inset 0 -3px 0 rgba(45, 55, 72, .17);
+      color: white;
+      cursor: pointer;
+      transition: filter 140ms ease, transform 100ms ease;
+    }
+
+    .turn-corner:hover { filter: brightness(1.06); }
+    .turn-corner:active { filter: brightness(.96); transform: scale(.975); }
+    .turn-corner:focus-visible { outline: 5px solid #f4b000; outline-offset: -5px; }
+    .turn-corner.top-left { top: 0; left: 0; clip-path: polygon(0 0, 100% 0, 0 100%); }
+    .turn-corner.top-right { top: 0; right: 0; clip-path: polygon(0 0, 100% 0, 100% 100%); }
+    .turn-corner.bottom-left { bottom: 0; left: 0; clip-path: polygon(0 0, 0 100%, 100% 100%); }
+    .turn-corner.bottom-right { right: 0; bottom: 0; clip-path: polygon(100% 0, 0 100%, 100% 100%); }
+
+    .turn-corner svg {
+      position: absolute;
+      width: 39px;
+      height: 39px;
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 3.2;
+    }
+
+    .top-left svg { top: 17px; left: 17px; transform: rotate(135deg); }
+    .top-right svg { top: 17px; right: 17px; transform: rotate(-135deg); }
+    .bottom-left svg { bottom: 17px; left: 17px; transform: rotate(45deg); }
+    .bottom-right svg { right: 17px; bottom: 17px; transform: rotate(-45deg); }
+
+    .rail {
+      display: flex;
+      height: 670px;
+      align-self: end;
+      flex-direction: column;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .disclosure {
+      margin-top: auto;
+      overflow: hidden;
+      border: 2px solid #bcc2cd;
+      border-radius: 20px;
+      background: var(--paper);
+    }
+
+    .disclosure-toggle {
+      display: flex;
+      width: 100%;
+      min-height: 62px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      border: 0;
+      background: transparent;
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: 850;
+      text-align: left;
+    }
+
+    .disclosure-toggle small {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .disclosure-toggle > span:last-child { color: #475467; font-size: 24px; transition: transform 160ms ease; }
+    .disclosure[data-open="true"] .disclosure-toggle > span:last-child { transform: rotate(180deg); }
+
+    .disclosure-body {
+      display: none;
+      gap: 10px;
+      max-height: 590px;
+      padding: 0 16px 16px;
+      border-top: 1px solid #d9dde5;
+      overflow: auto;
+    }
+
+    .disclosure[data-open="true"] .disclosure-body { display: grid; }
+    .disclosure-body p { margin: 13px 0 0; color: #475467; font-size: 15px; line-height: 1.5; }
+    .disclosure-body strong { color: var(--ink); font-size: 21px; }
+    .disclosure-body button {
+      min-height: 48px;
+      border: 1px solid #bbc2ce;
+      border-radius: 13px;
+      background: white;
+      color: #273247;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .detail-block {
+      display: grid;
+      gap: 5px;
+      padding: 12px 2px;
+      border-bottom: 1px solid #e0e3e9;
+    }
+
+    .detail-block:last-child { padding-bottom: 0; border-bottom: 0; }
+    .detail-label { color: var(--muted); font-size: 13px; font-weight: 800; letter-spacing: .06em; }
+    .detail-value { color: var(--ink); font-size: 17px; font-weight: 850; }
+    .detail-copy { margin: 0 !important; font-size: 14px !important; }
+
+    .score-card {
+      padding: 18px;
+      border: 2px solid #bcc2cd;
+      border-radius: 20px;
+      background: var(--paper);
+    }
+
+    .score-card h2 { margin: 0 0 12px; font-size: 18px; }
+    .score-player {
+      display: grid;
+      grid-template-columns: 16px 1fr auto;
+      gap: 9px;
+      align-items: center;
+      min-height: 48px;
+      padding: 0 10px;
+      border-radius: 12px;
+      color: #4a5262;
+      font-weight: 750;
+    }
+
+    .score-player + .score-player { margin-top: 6px; }
+    .score-player.current { border: 1px solid #dc9a12; background: #fff6d9; color: var(--ink); }
+    .score-player i { width: 14px; height: 14px; border-radius: 50%; background: var(--violet); }
+    .score-player.current i { background: var(--active); }
+    .score-player strong { color: var(--gold); font-size: 17px; }
+
+    .action-button {
+      min-height: 64px;
+      border-radius: 18px;
+      cursor: pointer;
+      font-size: 21px;
+      font-weight: 850;
+    }
+
+    .undo {
+      border: 2px solid #b42318;
+      background: #fff7f5;
+      color: #9f1c13;
+    }
+
+    .undo:hover { background: #ffe8e3; }
+    .undo:focus-visible { outline: 4px solid rgba(30, 64, 175, .24); outline-offset: 2px; }
+
+    @media (max-width: 900px) {
+      .prototype { grid-template-columns: 1fr; justify-items: center; }
+      .rail { width: min(670px, 100%); height: auto; align-self: auto; }
+      .disclosure { margin-top: 0; }
+    }
+  </style>
+</head>
+<body>
+  <main class="prototype">
+    <section class="game-main">
+      <header class="turn-heading"><i aria-hidden="true"></i><h1>真人验收的回合</h1></header>
+      <div class="board-shell" aria-label="棋盘界面原型">
+        <svg class="board" id="board" viewBox="0 0 760 760" role="img" aria-label="跳棋棋盘示意"></svg>
+        <button class="turn-corner top-left" type="button" aria-label="结束回合"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></button>
+        <button class="turn-corner top-right" type="button" aria-label="结束回合"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></button>
+        <button class="turn-corner bottom-left" type="button" aria-label="结束回合"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></button>
+        <button class="turn-corner bottom-right" type="button" aria-label="结束回合"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></button>
+      </div>
+    </section>
+
+    <aside class="rail" aria-label="本回合信息和操作">
+      <button class="action-button undo" type="button">悔棋</button>
+
+      <section class="score-card">
+        <h2>本局计分板</h2>
+        <div class="score-player current"><i></i><span>真人验收</span><strong>★ 0.1</strong></div>
+        <div class="score-player"><i></i><span>Lumen</span><strong>★ 0.2</strong></div>
+      </section>
+
+      <section class="disclosure" data-open="false">
+        <button class="disclosure-toggle" type="button" aria-expanded="false">
+          <span>棋局详情<small>设置、落点、计时与调试</small></span><span>⌄</span>
+        </button>
+        <div class="disclosure-body">
+          <div class="detail-block">
+            <span class="detail-label">棋局</span>
+            <span class="detail-value">标准开局 · 20 枚</span>
+            <p class="detail-copy">双人局 · 两位玩家位于对向营地</p>
+            <button type="button">重新开始</button>
+          </div>
+          <div class="detail-block">
+            <span class="detail-label">合法落点</span>
+            <span class="detail-value">R-10 · 2 处</span>
+            <p class="detail-copy">P-12-4（相邻）<br>P-10-5（普通跳，跨过 R-05）</p>
+          </div>
+          <div class="detail-block">
+            <span class="detail-label">回合计时</span>
+            <span class="detail-value">本回合 00:23 · 累计 05:22</span>
+          </div>
+          <div class="detail-block">
+            <span class="detail-label">调试</span>
+            <button type="button">打开调试面板</button>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  <script>
+    const svg = document.getElementById('board');
+    const ns = 'http://www.w3.org/2000/svg';
+    const cells = [];
+    const add = (q, r, camp = '') => {
+      if (!cells.some((cell) => cell.q === q && cell.r === r)) cells.push({ q, r, camp });
+    };
+    for (let q = -4; q <= 4; q += 1) {
+      for (let r = -4; r <= 4; r += 1) if (Math.abs(q + r) <= 4) add(q, r);
+    }
+    for (let t = 1; t <= 4; t += 1) {
+      for (let i = t; i <= 4; i += 1) {
+        add(i, -4 - t, 'red');
+        add(4 + t, -i);
+        add(i, 4 + t - i, 'teal');
+        add(-i, 4 + t);
+        add(-4 - t, i, 'violet');
+        add(-i, -4 - t + i);
+      }
+    }
+
+    const position = ({ q, r }) => ({ x: 380 + (q + r / 2) * 51, y: 380 + r * 44.5 });
+    const byKey = new Map(cells.map((cell) => [`${cell.q},${cell.r}`, cell]));
+    const directions = [[1, 0], [0, 1], [-1, 1], [-1, 0], [0, -1], [1, -1]];
+    const lines = document.createElementNS(ns, 'g');
+    cells.forEach((cell) => {
+      directions.slice(0, 3).forEach(([dq, dr]) => {
+        const next = byKey.get(`${cell.q + dq},${cell.r + dr}`);
+        if (!next) return;
+        const a = position(cell);
+        const b = position(next);
+        const line = document.createElementNS(ns, 'line');
+        line.setAttribute('x1', a.x); line.setAttribute('y1', a.y);
+        line.setAttribute('x2', b.x); line.setAttribute('y2', b.y);
+        line.setAttribute('class', 'board-line');
+        lines.appendChild(line);
+      });
+    });
+    svg.appendChild(lines);
+
+    cells.forEach((cell) => {
+      const { x, y } = position(cell);
+      const hole = document.createElementNS(ns, 'circle');
+      hole.setAttribute('cx', x); hole.setAttribute('cy', y); hole.setAttribute('r', 19);
+      hole.setAttribute('class', `hole${cell.camp ? ` camp-${cell.camp}` : ''}`);
+      svg.appendChild(hole);
+    });
+
+    const camps = {
+      red: cells.filter((cell) => cell.camp === 'red').slice(0, 10),
+      violet: cells.filter((cell) => cell.camp === 'violet').slice(0, 10),
+      teal: cells.filter((cell) => cell.camp === 'teal').slice(0, 10),
+    };
+    Object.entries(camps).forEach(([color, pieces]) => {
+      pieces.forEach((cell, index) => {
+        const { x, y } = position(cell);
+        const piece = document.createElementNS(ns, 'circle');
+        piece.setAttribute('cx', x); piece.setAttribute('cy', y); piece.setAttribute('r', 15.5);
+        piece.setAttribute('class', `piece ${color}${color === 'red' ? '' : ' inactive'}${color === 'red' && index === 9 ? ' selected' : ''}`);
+        svg.appendChild(piece);
+      });
+    });
+
+    [[0, -1], [1, -2]].forEach(([q, r]) => {
+      const cell = byKey.get(`${q},${r}`);
+      if (!cell) return;
+      const { x, y } = position(cell);
+      const landing = document.createElementNS(ns, 'circle');
+      landing.setAttribute('cx', x); landing.setAttribute('cy', y); landing.setAttribute('r', 16.5);
+      landing.setAttribute('class', 'landing');
+      svg.appendChild(landing);
+    });
+
+    document.querySelectorAll('.disclosure-toggle').forEach((toggle) => {
+      toggle.addEventListener('click', () => {
+        const disclosure = toggle.closest('.disclosure');
+        const open = disclosure.dataset.open !== 'true';
+        disclosure.dataset.open = String(open);
+        toggle.setAttribute('aria-expanded', String(open));
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="适合一家三口在同一台电脑上轮流玩的三人跳棋。">
+  <title>一家三口跳棋</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell" id="checkers-app">
+    <form class="card setup" id="player-form">
+      <p class="eyebrow">一家三口跳棋</p>
+      <h1>输入玩家昵称</h1>
+      <p class="setup-intro">第一位玩家是先手；开始后按照棋盘逆时针方向轮换。</p>
+      <div class="setup-grid">
+        <fieldset class="player-entry">
+          <legend>先手玩家</legend>
+          <label for="player-1-name">昵称
+            <input class="player-name" id="player-1-name" maxlength="12" placeholder="请输入昵称" autocomplete="off" required>
+          </label>
+          <label for="player-1-color">棋子颜色
+            <span class="color-picker"><span class="player-swatch red" id="player-1-swatch"></span><select class="player-color" id="player-1-color">
+              <option value="red">红色</option><option value="purple">紫色</option><option value="green">绿色</option>
+            </select></span>
+          </label>
+        </fieldset>
+        <fieldset class="player-entry">
+          <legend>第二位玩家</legend>
+          <label for="player-2-name">昵称
+            <input class="player-name" id="player-2-name" maxlength="12" placeholder="请输入昵称" autocomplete="off" required>
+          </label>
+          <label for="player-2-color">棋子颜色
+            <span class="color-picker"><span class="player-swatch purple" id="player-2-swatch"></span><select class="player-color" id="player-2-color">
+              <option value="purple">紫色</option><option value="green">绿色</option><option value="red">红色</option>
+            </select></span>
+          </label>
+        </fieldset>
+        <fieldset class="player-entry">
+          <legend>第三位玩家</legend>
+          <label for="player-3-name">昵称
+            <input class="player-name" id="player-3-name" maxlength="12" placeholder="请输入昵称" autocomplete="off" required>
+          </label>
+          <label for="player-3-color">棋子颜色
+            <span class="color-picker"><span class="player-swatch green" id="player-3-swatch"></span><select class="player-color" id="player-3-color">
+              <option value="green">绿色</option><option value="red">红色</option><option value="purple">紫色</option>
+            </select></span>
+          </label>
+        </fieldset>
+      </div>
+      <div class="setup-actions">
+        <p class="help" id="setup-help">请填写三位玩家的昵称。</p>
+        <button class="button button-primary" type="submit" id="start-game" disabled>开始游戏</button>
+      </div>
+    </form>
+
+    <div class="game-layout" id="game-layout" hidden>
+      <section class="game-main">
+        <div class="turn" aria-live="polite">
+          <div class="side-player"><span class="dot purple" id="before-dot"></span><span id="before">紫色</span></div>
+          <div class="current-player"><span class="dot red" id="now-dot"></span><h1 id="now">红色回合</h1></div>
+          <div class="side-player"><span class="dot green" id="after-dot"></span><span id="after">绿色</span></div>
+        </div>
+        <p class="turn-note" id="note">请选择红色棋子。</p>
+
+        <div class="stage">
+          <svg class="board" id="board" viewBox="0 0 640 610" role="img" aria-label="三人跳棋棋盘，支持连续跳跃与本回合悔棋">
+            <text x="320" y="596" text-anchor="middle" class="caption">点击棋子，再点击细描边落点进行移动或跳跃</text>
+          </svg>
+          <div class="turn-actions">
+            <button class="button turn-button" type="button" id="undo" disabled>悔棋</button>
+            <button class="button turn-button" type="button" id="end" disabled>结束回合</button>
+          </div>
+        </div>
+      </section>
+
+      <aside class="rail">
+        <section class="card">
+          <p class="label">测试场景</p>
+          <div class="mode-buttons">
+            <button class="button" type="button" id="standard" aria-pressed="true">标准开局 · 30 枚</button>
+            <button class="button" type="button" id="random" aria-pressed="false">随机放置 · 5 枚</button>
+            <button class="button" type="button" id="victory" aria-pressed="false">胜利测试 · 红方差一步</button>
+            <button class="button button-ghost" type="button" id="restart">重新开始</button>
+          </div>
+          <p class="help" id="mode-help">每方 10 枚棋子，位于三个交错营地。</p>
+        </section>
+
+        <section class="card">
+          <p class="label">合法落点</p>
+          <p class="value" id="status">请选择红色棋子</p>
+          <p class="help" id="list">细描边表示可以到达。</p>
+        </section>
+
+        <section class="card">
+          <p class="label">本局排名</p>
+          <p class="value" id="ranking">尚未产生名次</p>
+          <p class="help">完成玩家会被自动跳过。</p>
+        </section>
+
+        <section class="card debug" aria-live="polite">
+          <p class="label">调试 ID</p>
+          <p class="value" id="debug-id">移动到棋盘上查看</p>
+          <p class="help" id="debug-detail">棋盘落点和棋子都有独立 ID。</p>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <script src="rules.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

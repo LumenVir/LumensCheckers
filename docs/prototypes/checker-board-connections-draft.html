@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>闪光跳棋 · 棋盘连线草稿</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #eef0f5; color: #313646; font-family: "PingFang SC", sans-serif; }
+    .draft-frame { width: 760px; padding: 22px 30px 18px; background: #f5f6f9; }
+    header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+    h1 { margin: 0; font-size: 18px; }
+    p { margin: 0; color: #73798a; font-size: 12px; }
+    svg { display: block; width: 700px; height: 700px; }
+    .connection { stroke: #aeb5c2; stroke-width: 1.3; stroke-opacity: .34; stroke-linecap: round; }
+    .cell { fill: #f9fafc; stroke: #d5d9e2; stroke-width: 1.25; }
+    .cell.red { fill: #f9e5df; }
+    .cell.purple { fill: #eee7fb; }
+    .cell.green { fill: #e2f3f2; }
+    .piece { stroke: #fff; stroke-width: 2.5; }
+  </style>
+</head>
+<body>
+  <main class="draft-frame">
+    <header><h1>棋盘三角连线草稿</h1><p>细灰线 · 位于棋点与棋子下方</p></header>
+    <svg id="draft-board" viewBox="20 0 720 740" role="img" aria-label="带三角形辅助连线的跳棋棋盘草稿"></svg>
+  </main>
+  <script src="../../checkers-web/rules.js"></script>
+  <script>
+    const svg = document.getElementById('draft-board');
+    const { createBoardKeys, createStandardPieces } = window.CheckersRules;
+    const boardKeys = createBoardKeys();
+    const pieces = createStandardPieces();
+    const colors = { red: '#e95122', purple: '#8239ee', green: '#2bb7b4' };
+    const position = (key) => {
+      const [q, r] = key.split(',').map(Number);
+      return { x: 380 + (q + r / 2) * 50, y: 370 + r * 43.75 };
+    };
+    const element = (name, attributes) => {
+      const node = document.createElementNS('http://www.w3.org/2000/svg', name);
+      Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, value));
+      return node;
+    };
+
+    const lineLayer = element('g', { class: 'connections' });
+    const directions = [[1, 0], [0, 1], [1, -1]];
+    for (const key of boardKeys) {
+      const [q, r] = key.split(',').map(Number);
+      const from = position(key);
+      for (const [dq, dr] of directions) {
+        const neighborKey = `${q + dq},${r + dr}`;
+        if (!boardKeys.has(neighborKey)) continue;
+        const to = position(neighborKey);
+        lineLayer.append(element('line', { class: 'connection', x1: from.x, y1: from.y, x2: to.x, y2: to.y }));
+      }
+    }
+    svg.append(lineLayer);
+
+    for (const key of boardKeys) {
+      const point = position(key);
+      const piece = pieces.get(key);
+      svg.append(element('circle', {
+        class: `cell${piece ? ` ${piece.color}` : ''}`,
+        cx: point.x,
+        cy: point.y,
+        r: 15,
+      }));
+      if (piece) svg.append(element('circle', { class: 'piece', cx: point.x, cy: point.y, r: 12, fill: colors[piece.color] }));
+    }
+  </script>
+</body>
+</html>

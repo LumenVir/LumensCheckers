@@ -1,0 +1,11 @@
+.DS_Store
+**/.DS_Store
+
+# Local build archives and unrelated legacy files
+/release/
+/PRINTING.md
+/app.js
+/index.html
+/styles.css
+/assets/
+/cards/

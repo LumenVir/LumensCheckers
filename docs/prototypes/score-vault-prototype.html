@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>积分保险箱 · 交互原型</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --page: #f1f3f8;
+      --surface: #fbfcff;
+      --surface-muted: #f4f6fa;
+      --text: #222735;
+      --muted: #6d7485;
+      --line: #d7dbe5;
+      --focus: #334f8f;
+      --coin: #e9a913;
+      --coin-dark: #815b00;
+      --danger: #a84a42;
+      --shadow: 0 18px 44px rgba(37, 45, 68, .12);
+      font-family: "Avenir Next", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: var(--page);
+      color: var(--text);
+    }
+    button, input { font: inherit; }
+    button { touch-action: manipulation; }
+    [hidden] { display: none !important; }
+
+    .shell {
+      width: min(1060px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 36px 0;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .setup {
+      position: relative;
+      padding: 28px;
+    }
+    .eyebrow {
+      margin: 0 0 6px;
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: .08em;
+    }
+    h1 { margin: 0; font-size: 30px; }
+    .intro { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+    .menu-button {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: grid;
+      width: 48px;
+      height: 48px;
+      place-items: center;
+      border: 1px solid transparent;
+      border-radius: 50%;
+      background: transparent;
+      color: #5e6678;
+      cursor: pointer;
+      font-size: 27px;
+      letter-spacing: 2px;
+      line-height: 1;
+    }
+    .menu-button:hover,
+    .menu-button:focus-visible { border-color: var(--line); background: #f1f3f7; outline: 0; }
+
+    .setup-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin: 24px 0;
+    }
+    fieldset {
+      min-width: 0;
+      margin: 0;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #f7f8fb;
+    }
+    legend { padding: 0 5px; font-weight: 700; }
+    .segmented {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px;
+      margin-top: 6px;
+      padding: 3px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #e9ecf2;
+    }
+    .segmented span { padding: 8px; border-radius: 7px; color: var(--muted); font-size: 12px; text-align: center; }
+    .segmented .active { background: white; box-shadow: 0 2px 7px rgba(37,45,68,.12); color: var(--text); font-weight: 750; }
+    .name-label { display: grid; gap: 7px; margin-top: 12px; color: var(--muted); font-size: 14px; }
+    .fake-input { height: 44px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; background: white; color: #9399a7; }
+    .profile-label { margin: 13px 0 7px; color: var(--muted); font-size: 14px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip { padding: 7px 9px; border: 1px solid var(--line); border-radius: 9px; background: white; font-size: 12px; font-weight: 700; }
+    .chip b { margin-left: 5px; color: var(--coin-dark); font-size: 11px; }
+    .swatches { display: flex; gap: 9px; margin-top: 14px; }
+    .swatches i { width: 26px; height: 26px; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 0 1px var(--line); }
+    .setup-actions { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #e5e8ef; padding-top: 18px; }
+    .help { color: var(--muted); font-size: 13px; }
+    .primary, .secondary, .quiet, .danger {
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 11px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+    .primary { border: 1px solid var(--focus); background: var(--focus); color: white; }
+    .secondary { border: 1px solid var(--line); background: white; color: var(--text); }
+    .quiet { border: 0; background: transparent; color: var(--focus); }
+    .danger { border: 1px solid #e8c6c3; background: #fff7f6; color: var(--danger); }
+
+    .vault {
+      width: min(720px, calc(100vw - 36px));
+      margin: 0 auto;
+      overflow: hidden;
+    }
+    .vault-head {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 22px 24px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .back {
+      width: 44px;
+      height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: white;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 22px;
+    }
+    .vault-title { flex: 1; }
+    .vault-title h1 { font-size: 24px; }
+    .vault-title p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+    .safe-mark { display: flex; align-items: center; gap: 6px; color: #587060; font-size: 12px; font-weight: 700; }
+    .safe-mark i { width: 8px; height: 8px; border-radius: 50%; background: #668970; }
+
+    .vault-body { padding: 22px 24px 24px; }
+    .section-head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 10px; }
+    .section-head h2 { margin: 0; font-size: 15px; }
+    .section-head span { color: var(--muted); font-size: 12px; }
+    .players { border: 1px solid var(--line); border-radius: 13px; overflow: hidden; }
+    .player-row { display: grid; grid-template-columns: 1fr 140px 48px; align-items: center; min-height: 64px; padding: 0 10px 0 16px; background: white; }
+    .player-row + .player-row { border-top: 1px solid #e8eaf0; }
+    .player-name { font-weight: 750; }
+    .balance { color: var(--coin-dark); font-variant-numeric: tabular-nums; font-weight: 750; }
+    .coin { display: inline-grid; width: 20px; height: 20px; margin-right: 7px; place-items: center; border: 1px solid #c98c08; border-radius: 50%; background: #f5bd36; color: #855a00; font-size: 10px; vertical-align: -2px; }
+    .edit {
+      width: 44px;
+      height: 44px;
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--focus);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .edit:hover { background: #eef1f8; }
+    .add { width: 100%; min-height: 48px; margin-top: 10px; border: 1px dashed #aeb6c7; border-radius: 11px; background: transparent; color: var(--focus); cursor: pointer; font-weight: 700; }
+
+    .backup-block { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--line); }
+    .backup-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .backup-actions button { width: 100%; }
+    .backup-note { margin: 10px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+
+    dialog {
+      width: min(440px, calc(100vw - 36px));
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--surface);
+      box-shadow: 0 22px 70px rgba(23,31,54,.24);
+      color: var(--text);
+    }
+    dialog::backdrop { background: rgba(31,37,52,.38); backdrop-filter: blur(2px); }
+    .dialog-body { padding: 24px; }
+    .dialog-body h2 { margin: 0; font-size: 21px; }
+    .dialog-body > p { margin: 7px 0 20px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .field { display: grid; gap: 7px; margin-top: 14px; color: var(--muted); font-size: 13px; }
+    .field input { width: 100%; height: 48px; padding: 0 13px; border: 1px solid var(--line); border-radius: 10px; outline: 0; background: white; color: var(--text); }
+    .field input:focus { border-color: var(--focus); box-shadow: 0 0 0 3px rgba(51,79,143,.12); }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; }
+    .import-preview { border: 1px solid var(--line); border-radius: 11px; overflow: hidden; }
+    .import-preview div { display: flex; justify-content: space-between; padding: 11px 13px; background: white; font-size: 13px; }
+    .import-preview div + div { border-top: 1px solid #e8eaf0; }
+    .warning { margin: 14px 0 0 !important; padding: 11px 12px; border-radius: 9px; background: #fff6e4; color: #795b1b !important; }
+    .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); padding: 11px 16px; border-radius: 999px; background: #283043; color: white; box-shadow: var(--shadow); font-size: 13px; }
+
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 20px, 620px); padding: 10px 0; }
+      .setup-grid { grid-template-columns: 1fr; }
+      .vault-body, .vault-head { padding-left: 16px; padding-right: 16px; }
+      .player-row { grid-template-columns: 1fr 100px 44px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="card setup" id="setup-view">
+      <p class="eyebrow">闪光跳棋 | Lumen's Checker v2.0.1</p>
+      <h1>输入玩家昵称</h1>
+      <p class="intro">选择两至三位玩家；双人局自动上下对位。</p>
+      <button class="menu-button" id="open-vault" aria-label="更多" title="更多">•••</button>
+
+      <div class="setup-grid">
+        <fieldset>
+          <legend>先手玩家</legend>
+          <div class="segmented"><span class="active">玩家</span><span>简单电脑</span></div>
+          <label class="name-label">昵称<span class="fake-input">请选择玩家</span></label>
+          <p class="profile-label">玩家卡片</p>
+          <div class="chips"><span class="chip">乐乐 <b>38.5</b></span><span class="chip">妈妈 <b>22.5</b></span></div>
+          <div class="swatches"><i style="background:#e95122"></i><i style="background:#8239ee"></i><i style="background:#2bb7b4"></i></div>
+        </fieldset>
+        <fieldset>
+          <legend>第二位玩家</legend>
+          <div class="segmented"><span class="active">玩家</span><span>简单电脑</span></div>
+          <label class="name-label">昵称<span class="fake-input">请选择玩家</span></label>
+          <p class="profile-label">玩家卡片</p>
+          <div class="chips"><span class="chip">爸爸 <b>16.0</b></span><span class="chip">乐乐 <b>38.5</b></span></div>
+          <div class="swatches"><i style="background:#003da5"></i><i style="background:#b72b4a"></i><i style="background:#edc555"></i></div>
+        </fieldset>
+        <fieldset>
+          <legend>第三位玩家 · 可选</legend>
+          <div class="segmented"><span class="active">不参与</span><span>玩家</span></div>
+          <label class="name-label">昵称<span class="fake-input">留空则开始双人局</span></label>
+          <p class="profile-label">玩家卡片</p>
+          <div class="chips"><span class="chip">妈妈 <b>22.5</b></span><span class="chip">爸爸 <b>16.0</b></span></div>
+          <div class="swatches"><i style="background:#7894ad"></i><i style="background:#2f9235"></i><i style="background:#d46a00"></i></div>
+        </fieldset>
+      </div>
+      <div class="setup-actions"><span class="help">请至少选择一位玩家和一位对手。</span><button class="primary">开始游戏</button></div>
+    </section>
+
+    <section class="card vault" id="vault-view" hidden>
+      <header class="vault-head">
+        <button class="back" id="close-vault" aria-label="返回">←</button>
+        <div class="vault-title"><h1>积分保险箱</h1><p>紧急修复玩家昵称和长期金币</p></div>
+        <span class="safe-mark"><i></i>仅本机</span>
+      </header>
+      <div class="vault-body">
+        <div class="section-head"><h2>玩家余额</h2><span>3 位玩家</span></div>
+        <div class="players" id="players">
+          <div class="player-row"><span class="player-name">乐乐</span><span class="balance"><i class="coin">✦</i>38.5</span><button class="edit" data-name="乐乐" data-balance="38.5">修改</button></div>
+          <div class="player-row"><span class="player-name">妈妈</span><span class="balance"><i class="coin">✦</i>22.5</span><button class="edit" data-name="妈妈" data-balance="22.5">修改</button></div>
+          <div class="player-row"><span class="player-name">爸爸</span><span class="balance"><i class="coin">✦</i>16.0</span><button class="edit" data-name="爸爸" data-balance="16.0">修改</button></div>
+        </div>
+        <button class="add" id="add-player">＋ 录入玩家</button>
+
+        <section class="backup-block">
+          <div class="section-head"><h2>积分备份</h2><span>昵称 + 长期金币</span></div>
+          <div class="backup-actions">
+            <button class="secondary" id="export-backup">导出积分备份</button>
+            <button class="secondary" id="import-backup">导入积分备份</button>
+          </div>
+          <p class="backup-note">导出文件用于恢复积分，不包含棋盘残局。现有“导出战绩”仍保留在整局结束后的结算页面。</p>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="edit-dialog">
+    <form class="dialog-body" method="dialog" id="edit-form">
+      <h2 id="edit-title">修改玩家</h2>
+      <p>用于紧急修复。保存后会立即更新本机玩家卡片。</p>
+      <label class="field">昵称<input id="edit-name" maxlength="12" required></label>
+      <label class="field">长期金币余额<input id="edit-balance" type="number" min="0" step="0.1" inputmode="decimal" required></label>
+      <div class="dialog-actions"><button class="quiet" value="cancel">取消</button><button class="primary" value="save" id="save-edit">保存</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="import-dialog">
+    <form class="dialog-body" method="dialog">
+      <h2>确认导入积分备份</h2>
+      <p>原型用一份示例备份演示导入前的核对步骤。</p>
+      <div class="import-preview"><div><span>乐乐</span><strong>42.0</strong></div><div><span>妈妈</span><strong>24.5</strong></div><div><span>爸爸</span><strong>18.0</strong></div></div>
+      <p class="warning">同名玩家将更新余额；新昵称将新增玩家。其他现有玩家不会被删除。</p>
+      <div class="dialog-actions"><button class="quiet" value="cancel">取消</button><button class="danger" value="confirm" id="confirm-import">确认导入</button></div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script>
+    const setup = document.getElementById('setup-view');
+    const vault = document.getElementById('vault-view');
+    const editDialog = document.getElementById('edit-dialog');
+    const importDialog = document.getElementById('import-dialog');
+    const editTitle = document.getElementById('edit-title');
+    const editName = document.getElementById('edit-name');
+    const editBalance = document.getElementById('edit-balance');
+    const toast = document.getElementById('toast');
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.hidden = false;
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => { toast.hidden = true; }, 1800);
+    }
+
+    function openEditor(name = '', balance = '10.0') {
+      editTitle.textContent = name ? '修改玩家' : '录入玩家';
+      editName.value = name;
+      editBalance.value = balance;
+      editDialog.showModal();
+      editName.focus();
+    }
+
+    document.getElementById('open-vault').addEventListener('click', () => { setup.hidden = true; vault.hidden = false; });
+    document.getElementById('close-vault').addEventListener('click', () => { vault.hidden = true; setup.hidden = false; });
+    document.getElementById('add-player').addEventListener('click', () => openEditor());
+    document.querySelectorAll('.edit').forEach((button) => button.addEventListener('click', () => openEditor(button.dataset.name, button.dataset.balance)));
+    document.getElementById('save-edit').addEventListener('click', () => showToast('原型：玩家余额已保存'));
+    document.getElementById('export-backup').addEventListener('click', () => showToast('原型：已导出积分备份'));
+    document.getElementById('import-backup').addEventListener('click', () => importDialog.showModal());
+    document.getElementById('confirm-import').addEventListener('click', () => showToast('原型：3 位玩家积分已恢复'));
+  </script>
+</body>
+</html>

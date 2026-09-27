@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>闪光跳棋 v2.0 · 四角回合按钮原型</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --paper: #f1f2f6;
+      --surface: #fbfcff;
+      --ink: #30364a;
+      --muted: #737b90;
+      --line: #d7dce7;
+      --button: #e8ebf2;
+      --button-line: #c9cfdb;
+      --danger-bg: #fff0ee;
+      --danger-line: #e5b1ab;
+      --danger: #9b4037;
+      --purple: #8539ed;
+      --red: #e65521;
+      --green: #2fb4ad;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-width: 1024px;
+      min-height: 768px;
+      overflow: hidden;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "PingFang SC", "Hiragino Sans GB", sans-serif;
+    }
+
+    .prototype {
+      position: relative;
+      width: 1024px;
+      height: 768px;
+      margin: 0 auto;
+      padding: 14px 18px;
+    }
+
+    .prototype-tag {
+      position: absolute;
+      top: 14px;
+      left: 18px;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #8a91a3;
+      font-size: 12px;
+      letter-spacing: .08em;
+    }
+
+    .prototype-tag::before {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #aeb5c4;
+      content: "";
+    }
+
+    .turn-heading {
+      display: flex;
+      height: 58px;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .turn-heading .dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--purple);
+      box-shadow: 0 0 0 5px rgba(133, 57, 237, .10);
+    }
+
+    .turn-heading strong { font-size: 27px; font-weight: 750; }
+    .turn-heading span { color: var(--muted); font-size: 13px; }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 778px 210px;
+      gap: 12px;
+      align-items: start;
+    }
+
+    .board-stage {
+      position: relative;
+      height: 682px;
+      border-radius: 30px;
+      background: rgba(255, 255, 255, .26);
+    }
+
+    #board {
+      display: block;
+      width: 682px;
+      height: 682px;
+      margin: 0 auto;
+    }
+
+    .edge-line { stroke: #adb5c3; stroke-width: 1.2; stroke-opacity: .24; }
+    .cell { fill: #f7f8fb; stroke: #d7dce7; stroke-width: 1.25; }
+    .cell.camp-red { fill: #f6d8cf; }
+    .cell.camp-green { fill: #d8eeee; }
+    .cell.camp-purple { fill: #e7ddf4; }
+    .piece { stroke: #fbfcff; stroke-width: 2.5; }
+
+    .corner-action {
+      position: absolute;
+      z-index: 4;
+      width: 112px;
+      height: 112px;
+      padding: 0;
+      border: 0;
+      background: #e2e5ec;
+      color: #485065;
+      cursor: pointer;
+    }
+
+    .corner-action.top-left {
+      top: 54px;
+      left: 28px;
+      clip-path: polygon(0 0, 100% 0, 0 100%);
+    }
+
+    .corner-action.top-right {
+      top: 54px;
+      right: 28px;
+      clip-path: polygon(0 0, 100% 0, 100% 100%);
+    }
+
+    .corner-action.bottom-left {
+      bottom: 54px;
+      left: 28px;
+      clip-path: polygon(0 0, 0 100%, 100% 100%);
+    }
+
+    .corner-action.bottom-right {
+      right: 28px;
+      bottom: 54px;
+      clip-path: polygon(100% 0, 0 100%, 100% 100%);
+    }
+
+    .end-turn-icon {
+      position: absolute;
+      display: grid;
+      width: 40px;
+      height: 40px;
+      place-items: center;
+    }
+
+    .end-turn-icon svg {
+      width: 29px;
+      height: 29px;
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 2.8;
+    }
+
+    .top-left .end-turn-icon { top: 15px; left: 15px; transform: rotate(135deg); }
+    .top-right .end-turn-icon { top: 15px; right: 15px; transform: rotate(-135deg); }
+    .bottom-left .end-turn-icon { bottom: 15px; left: 15px; transform: rotate(45deg); }
+    .bottom-right .end-turn-icon { right: 15px; bottom: 15px; transform: rotate(-45deg); }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .rail { display: grid; gap: 10px; }
+
+    .card {
+      padding: 14px;
+      border: 1px solid #e0e3ea;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, .88);
+      box-shadow: 0 6px 20px rgba(66, 73, 94, .045);
+    }
+
+    .label {
+      margin: 0 0 8px;
+      color: #858c9e;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .09em;
+    }
+
+    .value { margin: 0; font-size: 14px; font-weight: 700; line-height: 1.45; }
+    .help { margin: 6px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+
+    .undo-button {
+      width: 100%;
+      min-height: 58px;
+      border: 1px solid var(--danger-line);
+      border-radius: 15px;
+      background: var(--danger-bg);
+      color: var(--danger);
+      font: inherit;
+      font-size: 16px;
+      font-weight: 750;
+    }
+
+    .coin-row { display: flex; align-items: center; justify-content: space-between; margin-top: 7px; font-size: 12px; }
+    .coin-row strong { font-variant-numeric: tabular-nums; }
+    .coin { color: #a77810; }
+
+  </style>
+</head>
+<body>
+  <main class="prototype">
+    <div class="prototype-tag">v2.0 布局草案 · iPad 横屏</div>
+    <header class="turn-heading">
+      <span>本回合</span><i class="dot"></i><strong>乐乐</strong><span>02:18</span>
+    </header>
+
+    <div class="layout">
+      <section class="board-stage" aria-label="四角结束回合按钮布局原型">
+        <svg id="board" viewBox="0 0 760 760" aria-hidden="true"></svg>
+        <button class="corner-action top-left" aria-label="结束回合" title="结束回合">
+          <span class="end-turn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span>
+          <span class="sr-only">结束回合</span>
+        </button>
+        <button class="corner-action top-right" aria-label="结束回合" title="结束回合">
+          <span class="end-turn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span>
+          <span class="sr-only">结束回合</span>
+        </button>
+        <button class="corner-action bottom-left" aria-label="结束回合" title="结束回合">
+          <span class="end-turn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span>
+          <span class="sr-only">结束回合</span>
+        </button>
+        <button class="corner-action bottom-right" aria-label="结束回合" title="结束回合">
+          <span class="end-turn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span>
+          <span class="sr-only">结束回合</span>
+        </button>
+      </section>
+
+      <aside class="rail">
+        <section class="card">
+          <p class="label">棋局</p>
+          <p class="value">标准开局 · 30 枚</p>
+          <p class="help">三人逆时针轮换</p>
+        </section>
+        <section class="card">
+          <p class="label">合法落点</p>
+          <p class="value">P-7-8 可继续跳</p>
+          <p class="help">细描边表示可以到达</p>
+        </section>
+        <button class="undo-button">悔棋</button>
+        <section class="card">
+          <p class="label">金币账本</p>
+          <div class="coin-row"><span>乐乐</span><strong class="coin">🪙 18.5</strong></div>
+          <div class="coin-row"><span>妈妈</span><strong class="coin">🪙 16</strong></div>
+          <div class="coin-row"><span>爸爸</span><strong class="coin">🪙 12.5</strong></div>
+        </section>
+      </aside>
+    </div>
+
+  </main>
+
+  <script src="../../checkers-web/rules.js"></script>
+  <script>
+    const svg = document.getElementById('board');
+    const NS = 'http://www.w3.org/2000/svg';
+    const boardKeys = CheckersRules.createBoardKeys();
+    const pieces = CheckersRules.createStandardPieces();
+    const directions = [[1, 0], [0, 1], [-1, 1]];
+    const position = (q, r) => ({ x: 380 + (q + r / 2) * 50, y: 370 + r * 43.75 });
+    const colors = { red: '#e65521', green: '#2fb4ad', purple: '#8539ed' };
+
+    const lineLayer = document.createElementNS(NS, 'g');
+    for (const key of boardKeys) {
+      const [q, r] = key.split(',').map(Number);
+      const from = position(q, r);
+      for (const [dq, dr] of directions) {
+        if (!boardKeys.has(`${q + dq},${r + dr}`)) continue;
+        const to = position(q + dq, r + dr);
+        const line = document.createElementNS(NS, 'line');
+        line.setAttribute('x1', from.x);
+        line.setAttribute('y1', from.y);
+        line.setAttribute('x2', to.x);
+        line.setAttribute('y2', to.y);
+        line.setAttribute('class', 'edge-line');
+        lineLayer.append(line);
+      }
+    }
+    svg.append(lineLayer);
+
+    for (const key of boardKeys) {
+      const [q, r] = key.split(',').map(Number);
+      const { x, y } = position(q, r);
+      const circle = document.createElementNS(NS, 'circle');
+      let camp = '';
+      if (r <= -5) camp = ' camp-red';
+      else if (q <= -5) camp = ' camp-purple';
+      else if (q + r >= 5) camp = ' camp-green';
+      circle.setAttribute('cx', x);
+      circle.setAttribute('cy', y);
+      circle.setAttribute('r', 16.5);
+      circle.setAttribute('class', `cell${camp}`);
+      svg.append(circle);
+
+      const piece = pieces.get(key);
+      if (!piece) continue;
+      const token = document.createElementNS(NS, 'circle');
+      token.setAttribute('cx', x);
+      token.setAttribute('cy', y);
+      token.setAttribute('r', 13.5);
+      token.setAttribute('fill', colors[piece.color]);
+      token.setAttribute('class', 'piece');
+      if (piece.color !== 'purple') token.setAttribute('opacity', '.72');
+      svg.append(token);
+    }
+  </script>
+</body>
+</html>

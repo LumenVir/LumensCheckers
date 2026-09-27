@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>闪光跳棋 v3.0 · 六人选人界面原型</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --page: #eef1f6;
+      --paper: #fbfcff;
+      --ink: #202532;
+      --muted: #6c7485;
+      --line: #d8dde7;
+      --blue: #334f8f;
+      --shadow: 0 18px 55px rgba(34, 42, 62, .10);
+      font-family: "Avenir Next", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { min-height: 100vh; margin: 0; background: radial-gradient(circle at 15% 0%, #f9f5e9 0, transparent 28%), var(--page); color: var(--ink); }
+    button, input { font: inherit; }
+    button { touch-action: manipulation; }
+    .shell { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 24px 0 28px; }
+    .topbar { display: flex; align-items: flex-start; justify-content: space-between; padding: 4px 4px 20px; }
+    .eyebrow { margin: 0 0 5px; color: #7b704c; font-size: 13px; font-weight: 800; letter-spacing: .12em; }
+    h1 { margin: 0; font-size: 34px; letter-spacing: -.04em; }
+    .subtitle { margin: 7px 0 0; color: var(--muted); font-size: 15px; }
+    .vault { width: 52px; height: 52px; border: 1px solid var(--line); border-radius: 50%; background: rgba(255,255,255,.72); color: #626b7d; cursor: pointer; font-size: 20px; letter-spacing: 2px; }
+
+    .seat-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .seat {
+      display: grid;
+      grid-template-columns: 64px minmax(0, 1fr) 196px;
+      gap: 16px;
+      align-items: center;
+      min-height: 152px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: rgba(251,252,255,.94);
+      box-shadow: 0 8px 26px rgba(34,42,62,.055);
+      transition: opacity .15s ease, background .15s ease;
+    }
+    .seat[data-kind="empty"] { border-style: dashed; background: rgba(245,247,251,.76); opacity: .66; }
+    .seat-number { display: grid; width: 64px; height: 64px; place-items: center; border-radius: 19px; background: #edf0f5; color: #485065; font-size: 24px; font-weight: 850; }
+    .seat[data-kind="human"] .seat-number { background: color-mix(in srgb, var(--seat-color) 15%, white); color: color-mix(in srgb, var(--seat-color) 76%, #222735); }
+    .seat[data-kind="computer"] .seat-number { background: #eceaf6; color: #655f8e; }
+    .identity { min-width: 0; }
+    .seat-title { margin: 0 0 7px; color: var(--muted); font-size: 13px; font-weight: 750; }
+    .player-trigger { display: inline-flex; min-height: 46px; max-width: 100%; align-items: center; gap: 10px; padding: 0 13px; border: 1px solid var(--line); border-radius: 12px; background: white; color: inherit; cursor: pointer; text-align: left; }
+    .player-trigger::after { content: '›'; color: #9198a6; font-size: 21px; }
+    .player-name { min-width: 0; overflow: hidden; font-size: 19px; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
+    .seat[data-kind="computer"] .player-trigger { cursor: default; }
+    .seat[data-kind="computer"] .player-trigger::after { display: none; }
+    .empty-name { display: none; color: #7d8493; font-size: 18px; font-weight: 750; }
+    .seat[data-kind="empty"] .player-trigger, .seat[data-kind="empty"] .color-trigger { display: none; }
+    .seat[data-kind="empty"] .empty-name { display: block; }
+
+    .color-trigger { display: inline-flex; min-height: 42px; align-items: center; gap: 9px; margin-top: 12px; padding: 0 12px; border: 1px solid var(--line); border-radius: 12px; background: white; color: var(--ink); cursor: pointer; font-size: 13px; font-weight: 750; }
+    .swatch { width: 21px; height: 21px; border: 3px solid white; border-radius: 50%; background: var(--seat-color); box-shadow: 0 0 0 1px color-mix(in srgb, var(--seat-color) 62%, #aab1c0); }
+    .color-trigger::after { content: '›'; margin-left: 5px; color: #9198a6; font-size: 20px; }
+
+    .kind-switch { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 14px; background: #ebedf3; }
+    .kind-switch button { min-height: 50px; padding: 0 6px; border: 0; border-radius: 10px; background: transparent; color: #777f8e; cursor: pointer; font-size: 13px; font-weight: 750; }
+    .kind-switch button[aria-pressed="true"] { background: white; box-shadow: 0 3px 9px rgba(34,42,62,.12); color: var(--ink); }
+
+    .footer { position: sticky; bottom: 0; display: grid; grid-template-columns: 1fr 290px; gap: 16px; align-items: center; margin-top: 16px; padding: 16px 18px; border: 1px solid rgba(216,221,231,.9); border-radius: 22px; background: rgba(251,252,255,.92); box-shadow: var(--shadow); backdrop-filter: blur(12px); }
+    .ready { display: flex; align-items: center; gap: 12px; }
+    .ready-count { font-size: 22px; font-weight: 850; }
+    .ready-note { color: var(--muted); font-size: 14px; }
+    .start { min-height: 64px; border: 0; border-radius: 17px; background: var(--blue); color: white; cursor: pointer; font-size: 18px; font-weight: 850; box-shadow: 0 9px 22px rgba(51,79,143,.22); }
+
+    dialog { width: min(520px, calc(100vw - 32px)); padding: 0; border: 1px solid var(--line); border-radius: 22px; background: var(--paper); box-shadow: 0 24px 80px rgba(24,31,48,.28); color: var(--ink); }
+    dialog::backdrop { background: rgba(31,37,52,.38); backdrop-filter: blur(2px); }
+    .palette { padding: 22px; }
+    .palette h2 { margin: 0; font-size: 23px; }
+    .palette p { margin: 6px 0 17px; color: var(--muted); font-size: 13px; }
+    .palette-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+    .palette-grid button { display: flex; min-height: 54px; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid var(--line); border-radius: 13px; background: white; cursor: pointer; color: var(--ink); font-size: 12px; font-weight: 750; text-align: left; }
+    .palette-grid i { width: 24px; height: 24px; flex: 0 0 auto; border: 3px solid white; border-radius: 50%; background: var(--color); box-shadow: 0 0 0 1px color-mix(in srgb, var(--color) 60%, #aab1c0); }
+    .close { width: 100%; min-height: 52px; margin-top: 14px; border: 1px solid var(--line); border-radius: 13px; background: #f3f5f9; cursor: pointer; font-weight: 750; }
+
+    .player-picker { padding: 22px; }
+    .player-picker h2 { margin: 0; font-size: 23px; }
+    .player-picker > p { margin: 6px 0 17px; color: var(--muted); font-size: 13px; }
+    .profile-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; }
+    .profile-option { display: grid; min-height: 64px; grid-template-columns: 38px 1fr auto; gap: 10px; align-items: center; padding: 9px 12px; border: 1px solid var(--line); border-radius: 14px; background: white; color: var(--ink); cursor: pointer; text-align: left; }
+    .profile-avatar { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 12px; background: #eef1f6; color: #50596c; font-size: 17px; font-weight: 850; }
+    .profile-option strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .profile-option small { color: #946500; font-weight: 800; white-space: nowrap; }
+    .new-player { margin-top: 17px; padding-top: 17px; border-top: 1px solid var(--line); }
+    .new-player label { display: block; margin-bottom: 8px; color: var(--muted); font-size: 13px; font-weight: 750; }
+    .new-player-row { display: grid; grid-template-columns: 1fr 150px; gap: 9px; }
+    .new-player input { min-width: 0; height: 52px; padding: 0 14px; border: 1px solid var(--line); border-radius: 13px; background: white; color: var(--ink); font-size: 17px; outline: none; }
+    .new-player input:focus { border-color: #8192bb; box-shadow: 0 0 0 3px rgba(51,79,143,.10); }
+    .use-name { border: 0; border-radius: 13px; background: var(--blue); color: white; cursor: pointer; font-weight: 800; }
+
+    @media (max-width: 850px) {
+      .seat-grid { grid-template-columns: 1fr; }
+      .seat { grid-template-columns: 58px minmax(0,1fr) 184px; }
+      .footer { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div><p class="eyebrow">闪光跳棋</p><h1>今天谁来下棋？</h1><p class="subtitle">点选参与状态；颜色需要时再展开。至少两位，最多一位简单电脑。</p></div>
+      <button class="vault" aria-label="积分保险箱">•••</button>
+    </header>
+
+    <section class="seat-grid" id="seat-grid">
+      <article class="seat" data-kind="human" data-coins="42.1" style="--seat-color:#e95122"><div class="seat-number">1</div><div class="identity"><p class="seat-title">先手席位</p><button class="player-trigger"><span class="player-name">乐乐</span></button><span class="empty-name">本局不参与</span><button class="color-trigger"><i class="swatch"></i>红色</button></div><div class="kind-switch"><button aria-pressed="true" data-kind="human">玩家</button><button aria-pressed="false" data-kind="computer">电脑</button><button aria-pressed="false" data-kind="empty">不参与</button></div></article>
+      <article class="seat" data-kind="human" data-coins="24.5" style="--seat-color:#8239ee"><div class="seat-number">2</div><div class="identity"><p class="seat-title">第二席位</p><button class="player-trigger"><span class="player-name">妈妈</span></button><span class="empty-name">本局不参与</span><button class="color-trigger"><i class="swatch"></i>紫色</button></div><div class="kind-switch"><button aria-pressed="true" data-kind="human">玩家</button><button aria-pressed="false" data-kind="computer">电脑</button><button aria-pressed="false" data-kind="empty">不参与</button></div></article>
+      <article class="seat" data-kind="human" data-coins="18.0" style="--seat-color:#2bb7b4"><div class="seat-number">3</div><div class="identity"><p class="seat-title">第三席位</p><button class="player-trigger"><span class="player-name">爸爸</span></button><span class="empty-name">本局不参与</span><button class="color-trigger"><i class="swatch"></i>绿色</button></div><div class="kind-switch"><button aria-pressed="true" data-kind="human">玩家</button><button aria-pressed="false" data-kind="computer">电脑</button><button aria-pressed="false" data-kind="empty">不参与</button></div></article>
+      <article class="seat" data-kind="human" data-coins="10.0" style="--seat-color:#2d7eb6"><div class="seat-number">4</div><div class="identity"><p class="seat-title">第四席位</p><button class="player-trigger"><span class="player-name">奶奶</span></button><span class="empty-name">本局不参与</span><button class="color-trigger"><i class="swatch"></i>唐老鸭蓝</button></div><div class="kind-switch"><button aria-pressed="true" data-kind="human">玩家</button><button aria-pressed="false" data-kind="computer">电脑</button><button aria-pressed="false" data-kind="empty">不参与</button></div></article>
+      <article class="seat" data-kind="computer" data-coins="10.0" style="--seat-color:#d46a00"><div class="seat-number">L</div><div class="identity"><p class="seat-title">第五席位</p><button class="player-trigger"><span class="player-name">Lumen</span></button><span class="empty-name">本局不参与</span><button class="color-trigger"><i class="swatch"></i>布鲁托橙</button></div><div class="kind-switch"><button aria-pressed="false" data-kind="human">玩家</button><button aria-pressed="true" data-kind="computer">电脑</button><button aria-pressed="false" data-kind="empty">不参与</button></div></article>
+      <article class="seat" data-kind="empty" data-coins="10.0" style="--seat-color:#003da5"><div class="seat-number">6</div><div class="identity"><p class="seat-title">第六席位</p><button class="player-trigger"><span class="player-name">爷爷</span></button><span class="empty-name">本局不参与</span><button class="color-trigger"><i class="swatch"></i>白雪深蓝</button></div><div class="kind-switch"><button aria-pressed="false" data-kind="human">玩家</button><button aria-pressed="false" data-kind="computer">电脑</button><button aria-pressed="true" data-kind="empty">不参与</button></div></article>
+    </section>
+
+    <footer class="footer"><div class="ready"><span class="ready-count" id="ready-count">5 位参与</span><span class="ready-note">四位玩家 + 一位简单电脑 · 自动分配营地</span></div><button class="start" id="start">开始 5 人局</button></footer>
+  </main>
+
+  <dialog id="palette-dialog"><section class="palette"><h2>选择棋子颜色</h2><p id="palette-seat">为当前席位选择一个容易辨认的颜色</p><div class="palette-grid" id="palette-grid"></div><button class="close" id="close-palette">完成</button></section></dialog>
+  <dialog id="player-dialog"><section class="player-picker"><h2>这个席位谁来玩？</h2><p id="player-seat">选择已有玩家，或者输入一个新昵称。</p><div class="profile-grid" id="profile-grid"></div><div class="new-player"><label for="new-player-name">使用新昵称</label><div class="new-player-row"><input id="new-player-name" maxlength="12" placeholder="输入昵称"><button class="use-name" id="use-name" type="button">使用此昵称</button></div></div><button class="close" id="close-player" type="button">取消</button></section></dialog>
+  <script>
+    const colors = [['红色','#e95122'],['紫色','#8239ee'],['绿色','#2bb7b4'],['唐老鸭蓝','#2d7eb6'],['高飞绿','#2f9235'],['布鲁托橙','#d46a00'],['米奇黑','#252733'],['白雪深蓝','#003da5'],['人鱼红发','#b72b4a'],['灰姑娘蓝','#7894ad'],['乐佩金黄','#edc555']];
+    const dialog = document.getElementById('palette-dialog');
+    const grid = document.getElementById('palette-grid');
+    const playerDialog = document.getElementById('player-dialog');
+    const profileGrid = document.getElementById('profile-grid');
+    const playerNameInput = document.getElementById('new-player-name');
+    const profiles = [{name:'乐乐',coins:'42.1'},{name:'妈妈',coins:'24.5'},{name:'爸爸',coins:'18.0'},{name:'奶奶',coins:'10.0'},{name:'爷爷',coins:'10.0'}];
+    let activeSeat = null;
+    let activePlayerSeat = null;
+    colors.forEach(([name,color]) => { const button=document.createElement('button'); button.innerHTML=`<i style="--color:${color}"></i>${name}`; button.addEventListener('click',()=>{ if(!activeSeat)return; activeSeat.style.setProperty('--seat-color',color); activeSeat.querySelector('.color-trigger').lastChild.textContent=name; dialog.close(); }); grid.append(button); });
+    document.querySelectorAll('.color-trigger').forEach(button=>button.addEventListener('click',()=>{ activeSeat=button.closest('.seat'); dialog.showModal(); }));
+    document.getElementById('close-palette').addEventListener('click',()=>dialog.close());
+    function selectProfile(profile){ if(!activePlayerSeat)return; activePlayerSeat.querySelector('.player-name').textContent=profile.name; activePlayerSeat.dataset.coins=profile.coins; activePlayerSeat.dataset.savedName=profile.name; activePlayerSeat.dataset.savedCoins=profile.coins; playerDialog.close(); }
+    function renderProfiles(){ profileGrid.replaceChildren(); profiles.forEach(profile=>{ const button=document.createElement('button'); button.className='profile-option'; button.innerHTML=`<span class="profile-avatar">${profile.name.slice(0,1)}</span><strong>${profile.name}</strong><small>★ ${profile.coins}</small>`; button.addEventListener('click',()=>selectProfile(profile)); profileGrid.append(button); }); }
+    document.querySelectorAll('.player-trigger').forEach(button=>button.addEventListener('click',()=>{ const seat=button.closest('.seat'); if(seat.dataset.kind!=='human')return; activePlayerSeat=seat; playerNameInput.value=''; document.getElementById('player-seat').textContent=`为${seat.querySelector('.seat-title').textContent}选择已有玩家，或者输入一个新昵称。`; renderProfiles(); playerDialog.showModal(); setTimeout(()=>playerNameInput.focus(),50); }));
+    document.getElementById('use-name').addEventListener('click',()=>{ const name=playerNameInput.value.trim(); if(!name)return playerNameInput.focus(); let profile=profiles.find(item=>item.name===name); if(!profile){profile={name,coins:'10.0'};profiles.push(profile);} selectProfile(profile); });
+    playerNameInput.addEventListener('keydown',event=>{ if(event.key==='Enter')document.getElementById('use-name').click(); });
+    document.getElementById('close-player').addEventListener('click',()=>playerDialog.close());
+    function setKind(seat,kind){ const oldKind=seat.dataset.kind; const number=seat.dataset.seatNumber; if(kind==='computer'&&oldKind!=='computer'){seat.dataset.savedName=seat.querySelector('.player-name').textContent;seat.dataset.savedCoins=seat.dataset.coins||'10.0';seat.querySelector('.player-name').textContent='Lumen';seat.querySelector('.seat-number').textContent='L';} if(oldKind==='computer'&&kind!=='computer'){seat.querySelector('.player-name').textContent=seat.dataset.savedName||'新玩家';seat.dataset.coins=seat.dataset.savedCoins||'10.0';seat.querySelector('.seat-number').textContent=number;} seat.dataset.kind=kind; seat.querySelectorAll('.kind-switch button').forEach(item=>item.setAttribute('aria-pressed',String(item.dataset.kind===kind))); }
+    document.querySelectorAll('.seat').forEach((seat,index)=>{seat.dataset.seatNumber=String(index+1);if(seat.dataset.kind!=='computer'){seat.dataset.savedName=seat.querySelector('.player-name').textContent;seat.dataset.savedCoins=seat.dataset.coins||'10.0';}});
+    document.querySelectorAll('.kind-switch button').forEach(button=>button.addEventListener('click',()=>{ const seat=button.closest('.seat'); if(button.dataset.kind==='computer') document.querySelectorAll('.seat[data-kind="computer"]').forEach(other=>{ if(other!==seat)setKind(other,'human');}); setKind(seat,button.dataset.kind); updateReady(); }));
+    function updateReady(){ const active=[...document.querySelectorAll('.seat')].filter(seat=>seat.dataset.kind!=='empty'); const computers=active.filter(seat=>seat.dataset.kind==='computer').length; document.getElementById('ready-count').textContent=`${active.length} 位参与`; document.getElementById('start').textContent=`开始 ${active.length} 人局`; document.querySelector('.ready-note').textContent=`${active.length-computers} 位玩家${computers?' + 一位简单电脑':''} · 自动分配营地`; }
+  </script>
+</body>
+</html>

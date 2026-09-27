@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="适合亲友在同一台设备上轮流玩的二至六人跳棋。">
+  <title>闪光跳棋 | Lumen's Checker v3.3</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css?v=3.3">
+</head>
+<body>
+  <main class="app-shell" id="checkers-app">
+    <form class="card setup" id="player-form">
+      <p class="eyebrow">闪光跳棋</p>
+      <h1>今天谁来下棋？</h1>
+      <p class="setup-intro">点选参与状态；姓名和颜色需要时再展开。至少两位，最多一位简单电脑。</p>
+      <button class="setup-menu-button" type="button" id="open-score-vault" aria-label="打开积分保险箱" title="积分保险箱">•••</button>
+      <div class="setup-grid">
+        <fieldset class="player-entry" data-seat-number="1" style="--seat-color:#e95122">
+          <legend class="sr-only">先手席位</legend>
+          <span class="seat-number" aria-hidden="true">1</span><p class="seat-title">先手席位</p>
+          <div class="player-kind optional-player-kind" role="radiogroup" aria-label="先手席位类型">
+            <input id="player-1-kind" type="hidden" value="human">
+            <button type="button" data-kind="human" role="radio" aria-checked="true">玩家</button>
+            <button type="button" data-kind="computer" role="radio" aria-checked="false">电脑</button>
+            <button type="button" data-kind="empty" role="radio" aria-checked="false">不参与</button>
+          </div>
+          <input class="player-name" id="player-1-name" type="hidden">
+          <input class="player-color" id="player-1-color" type="hidden" value="red">
+          <div class="seat-selectors"><button class="setup-select player-select" type="button" id="player-1-name-trigger"><span id="player-1-name-summary">选择玩家</span></button><button class="setup-select color-select" type="button" id="player-1-color-trigger"><i></i><span id="player-1-color-summary">红色</span></button></div>
+          <p class="empty-player-note">本局不参与</p>
+        </fieldset>
+        <fieldset class="player-entry" data-seat-number="2" style="--seat-color:#8239ee">
+          <legend class="sr-only">第二席位</legend>
+          <span class="seat-number" aria-hidden="true">2</span><p class="seat-title">第二席位</p>
+          <div class="player-kind optional-player-kind" role="radiogroup" aria-label="第二席位类型">
+            <input id="player-2-kind" type="hidden" value="human">
+            <button type="button" data-kind="human" role="radio" aria-checked="true">玩家</button>
+            <button type="button" data-kind="computer" role="radio" aria-checked="false">电脑</button>
+            <button type="button" data-kind="empty" role="radio" aria-checked="false">不参与</button>
+          </div>
+          <input class="player-name" id="player-2-name" type="hidden">
+          <input class="player-color" id="player-2-color" type="hidden" value="purple">
+          <div class="seat-selectors"><button class="setup-select player-select" type="button" id="player-2-name-trigger"><span id="player-2-name-summary">选择玩家</span></button><button class="setup-select color-select" type="button" id="player-2-color-trigger"><i></i><span id="player-2-color-summary">紫色</span></button></div>
+          <p class="empty-player-note">本局不参与</p>
+        </fieldset>
+        <fieldset class="player-entry" data-seat-number="3" style="--seat-color:#2bb7b4">
+          <legend class="sr-only">第三席位</legend>
+          <span class="seat-number" aria-hidden="true">3</span><p class="seat-title">第三席位</p>
+          <div class="player-kind optional-player-kind" role="radiogroup" aria-label="第三席位类型">
+            <input id="player-3-kind" type="hidden" value="empty">
+            <button type="button" data-kind="human" role="radio" aria-checked="false">玩家</button>
+            <button type="button" data-kind="computer" role="radio" aria-checked="false">电脑</button>
+            <button type="button" data-kind="empty" role="radio" aria-checked="true">不参与</button>
+          </div>
+          <input class="player-name" id="player-3-name" type="hidden">
+          <input class="player-color" id="player-3-color" type="hidden" value="green">
+          <div class="seat-selectors"><button class="setup-select player-select" type="button" id="player-3-name-trigger"><span id="player-3-name-summary">选择玩家</span></button><button class="setup-select color-select" type="button" id="player-3-color-trigger"><i></i><span id="player-3-color-summary">绿色</span></button></div>
+          <p class="empty-player-note">本局不参与</p>
+        </fieldset>
+        <fieldset class="player-entry" data-seat-number="4" style="--seat-color:#2d7eb6">
+          <legend class="sr-only">第四席位</legend>
+          <span class="seat-number" aria-hidden="true">4</span><p class="seat-title">第四席位</p>
+          <div class="player-kind optional-player-kind" role="radiogroup" aria-label="第四席位类型">
+            <input id="player-4-kind" type="hidden" value="empty">
+            <button type="button" data-kind="human" role="radio" aria-checked="false">玩家</button>
+            <button type="button" data-kind="computer" role="radio" aria-checked="false">电脑</button>
+            <button type="button" data-kind="empty" role="radio" aria-checked="true">不参与</button>
+          </div>
+          <input class="player-name" id="player-4-name" type="hidden">
+          <input class="player-color" id="player-4-color" type="hidden" value="donaldBlue">
+          <div class="seat-selectors"><button class="setup-select player-select" type="button" id="player-4-name-trigger"><span id="player-4-name-summary">选择玩家</span></button><button class="setup-select color-select" type="button" id="player-4-color-trigger"><i></i><span id="player-4-color-summary">唐老鸭蓝</span></button></div>
+          <p class="empty-player-note">本局不参与</p>
+        </fieldset>
+        <fieldset class="player-entry" data-seat-number="5" style="--seat-color:#d46a00">
+          <legend class="sr-only">第五席位</legend>
+          <span class="seat-number" aria-hidden="true">5</span><p class="seat-title">第五席位</p>
+          <div class="player-kind optional-player-kind" role="radiogroup" aria-label="第五席位类型">
+            <input id="player-5-kind" type="hidden" value="empty">
+            <button type="button" data-kind="human" role="radio" aria-checked="false">玩家</button>
+            <button type="button" data-kind="computer" role="radio" aria-checked="false">电脑</button>
+            <button type="button" data-kind="empty" role="radio" aria-checked="true">不参与</button>
+          </div>
+          <input class="player-name" id="player-5-name" type="hidden">
+          <input class="player-color" id="player-5-color" type="hidden" value="plutoOrange">
+          <div class="seat-selectors"><button class="setup-select player-select" type="button" id="player-5-name-trigger"><span id="player-5-name-summary">选择玩家</span></button><button class="setup-select color-select" type="button" id="player-5-color-trigger"><i></i><span id="player-5-color-summary">布鲁托橙</span></button></div>
+          <p class="empty-player-note">本局不参与</p>
+        </fieldset>
+        <fieldset class="player-entry" data-seat-number="6" style="--seat-color:#003da5">
+          <legend class="sr-only">第六席位</legend>
+          <span class="seat-number" aria-hidden="true">6</span><p class="seat-title">第六席位</p>
+          <div class="player-kind optional-player-kind" role="radiogroup" aria-label="第六席位类型">
+            <input id="player-6-kind" type="hidden" value="empty">
+            <button type="button" data-kind="human" role="radio" aria-checked="false">玩家</button>
+            <button type="button" data-kind="computer" role="radio" aria-checked="false">电脑</button>
+            <button type="button" data-kind="empty" role="radio" aria-checked="true">不参与</button>
+          </div>
+          <input class="player-name" id="player-6-name" type="hidden">
+          <input class="player-color" id="player-6-color" type="hidden" value="snowBlue">
+          <div class="seat-selectors"><button class="setup-select player-select" type="button" id="player-6-name-trigger"><span id="player-6-name-summary">选择玩家</span></button><button class="setup-select color-select" type="button" id="player-6-color-trigger"><i></i><span id="player-6-color-summary">白雪深蓝</span></button></div>
+          <p class="empty-player-note">本局不参与</p>
+        </fieldset>
+      </div>
+      <div class="setup-actions">
+        <p class="help" id="setup-help">请至少选择两位参与者。</p>
+        <button class="button button-primary" type="submit" id="start-game" disabled>开始游戏</button>
+      </div>
+    </form>
+
+    <section class="card score-vault" id="score-vault" hidden>
+      <header class="score-vault-header">
+        <button class="score-vault-back" type="button" id="close-score-vault" aria-label="返回玩家选择">←</button>
+        <div>
+          <h1>积分保险箱</h1>
+          <p>紧急修复玩家昵称和长期金币</p>
+        </div>
+        <span class="score-vault-local"><i></i>仅本机</span>
+      </header>
+      <div class="score-vault-body">
+        <div class="score-vault-section-heading">
+          <h2>玩家余额</h2>
+          <span id="score-vault-count">0 位玩家</span>
+        </div>
+        <div class="score-vault-players" id="score-vault-players"></div>
+        <button class="score-vault-add" type="button" id="add-score-profile">＋ 录入玩家</button>
+
+        <section class="score-vault-backup">
+          <div class="score-vault-section-heading">
+            <h2>积分备份</h2>
+            <span>昵称 + 长期金币</span>
+          </div>
+          <div class="score-vault-backup-actions">
+            <button class="button" type="button" id="export-score-backup">导出积分备份</button>
+            <button class="button" type="button" id="import-score-backup">导入积分备份</button>
+          </div>
+          <input id="score-backup-file" type="file" accept="application/json,.json" hidden>
+          <p class="score-vault-note">导出文件用于恢复积分，不包含棋盘残局。现有“导出战绩”仍保留在整局结束后的结算页面。</p>
+        </section>
+        <p class="score-vault-status" id="score-vault-status" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <div class="game-layout" id="game-layout" hidden>
+      <section class="game-main">
+        <div class="turn" aria-live="polite">
+          <div class="current-player"><span class="dot red" id="now-dot"></span><h1 id="now">当前玩家</h1></div>
+        </div>
+
+        <div class="stage">
+          <svg class="board" id="board" viewBox="0 0 760 760" role="img" aria-label="二至六人跳棋棋盘，支持连续跳跃与整回合悔棋">
+          </svg>
+          <div class="turn-corner-actions" aria-label="结束回合操作">
+            <button class="turn-corner top-left" type="button" id="end" data-end-turn aria-label="结束回合" aria-keyshortcuts="Enter" title="结束回合（回车）" disabled>
+              <span class="end-turn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span>
+            </button>
+            <button class="turn-corner top-right" type="button" data-end-turn aria-label="结束回合" title="结束回合（回车）" disabled>
+              <span class="end-turn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span>
+            </button>
+            <button class="turn-corner bottom-left" type="button" data-end-turn aria-label="结束回合" title="结束回合（回车）" disabled>
+              <span class="end-turn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span>
+            </button>
+            <button class="turn-corner bottom-right" type="button" data-end-turn aria-label="结束回合" title="结束回合（回车）" disabled>
+              <span class="end-turn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></svg></span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <aside class="rail">
+        <button class="button rail-undo-button" type="button" id="undo" disabled>悔棋</button>
+
+        <section class="card coin-card score-card" aria-live="polite">
+          <p class="label">本局计分板</p>
+          <div class="coin-board" id="coin-board"></div>
+          <p class="sr-only" id="coin-help">标准对局计金币，结束整局后存入长期余额。</p>
+        </section>
+
+        <section class="card game-details" id="game-details" data-open="false">
+          <button class="game-details-toggle" type="button" id="game-details-toggle" aria-expanded="false" aria-controls="game-details-body">
+            <span><strong>棋局详情</strong><small>设置、落点、计时与调试</small></span>
+            <i aria-hidden="true">⌄</i>
+          </button>
+          <div class="game-details-body" id="game-details-body">
+            <section class="detail-block">
+              <p class="label">棋局</p>
+              <div class="mode-buttons">
+                <button class="button" type="button" id="standard" aria-pressed="true">标准开局</button>
+                <button class="button button-ghost" type="button" id="restart">重新开始</button>
+              </div>
+              <p class="help" id="mode-help">每方 10 枚棋子，营地按人数自动分配。</p>
+            </section>
+
+            <section class="detail-block">
+              <p class="label">合法落点</p>
+              <p class="value" id="status">请选择棋子</p>
+              <p class="help" id="list">细描边表示可以到达。</p>
+            </section>
+
+            <section class="detail-block">
+              <p class="label">回合计时</p>
+              <div class="turn-clock" id="turn-clock" aria-label="当前玩家用时">
+                <span>本回合</span><strong id="turn-time">00:00</strong>
+                <i aria-hidden="true"></i>
+                <span>累计</span><strong id="total-time">00:00</strong>
+              </div>
+            </section>
+
+            <section class="detail-block" id="ranking-card" hidden>
+              <p class="label">本局排名</p>
+              <p class="value" id="ranking">尚未产生名次</p>
+              <p class="help">完成玩家会被自动跳过。</p>
+              <button class="button export-button" type="button" id="export-record" hidden>导出战绩</button>
+            </section>
+
+            <section class="detail-block debug-menu" id="debug-menu">
+              <p class="label">调试面板</p>
+              <div class="mode-buttons">
+                <button class="button" type="button" id="random" aria-pressed="false">随机放置 · 5 枚</button>
+                <button class="button" type="button" id="victory" aria-pressed="false">结算测试 · 每方差一步</button>
+              </div>
+              <p class="help">调试场景不计金币。</p>
+              <div class="debug-info" aria-live="polite">
+                <p class="label">调试 ID</p>
+                <p class="value" id="debug-id">触摸或移动到棋盘上查看</p>
+                <p class="help" id="debug-detail">棋盘落点和棋子都有独立 ID。</p>
+              </div>
+            </section>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <dialog class="setup-picker-dialog" id="setup-player-dialog" aria-labelledby="setup-player-dialog-title">
+    <section>
+      <h2 id="setup-player-dialog-title">这个席位谁来玩？</h2>
+      <p id="setup-player-dialog-lead">选择已有玩家，或者输入一个新昵称。</p>
+      <div class="setup-profile-grid" id="setup-profile-list"></div>
+      <div class="setup-new-player">
+        <label for="setup-new-player-name">使用新昵称</label>
+        <div><input id="setup-new-player-name" maxlength="12" placeholder="输入昵称" autocomplete="off"><button class="button button-primary" type="button" id="setup-use-new-player">使用此昵称</button></div>
+      </div>
+      <button class="button button-ghost setup-picker-close" type="button" id="setup-close-player">取消</button>
+    </section>
+  </dialog>
+
+  <dialog class="setup-picker-dialog" id="setup-color-dialog" aria-labelledby="setup-color-dialog-title">
+    <section>
+      <h2 id="setup-color-dialog-title">选择棋子颜色</h2>
+      <p id="setup-color-dialog-lead">已经被其他参与者使用的颜色不可选择。</p>
+      <div class="color-card-grid setup-color-grid" id="setup-color-grid" role="radiogroup" aria-label="棋子颜色"></div>
+      <button class="button button-ghost setup-picker-close" type="button" id="setup-close-color">取消</button>
+    </section>
+  </dialog>
+
+  <dialog class="score-dialog" id="score-profile-dialog" aria-labelledby="score-profile-dialog-title">
+    <form id="score-profile-form">
+      <h2 id="score-profile-dialog-title">修改玩家</h2>
+      <p>用于紧急修复。保存后会立即更新本机玩家卡片。</p>
+      <label>昵称
+        <input id="score-profile-name" maxlength="12" autocomplete="off" required>
+      </label>
+      <label>长期金币余额
+        <input id="score-profile-balance" type="number" min="0" step="0.1" inputmode="decimal" required>
+      </label>
+      <p class="score-dialog-error" id="score-profile-error" aria-live="polite"></p>
+      <div class="score-dialog-actions">
+        <button class="button button-ghost" type="button" id="cancel-score-profile">取消</button>
+        <button class="button button-primary" type="submit">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="score-dialog" id="score-import-dialog" aria-labelledby="score-import-dialog-title">
+    <form id="score-import-form">
+      <h2 id="score-import-dialog-title">确认导入积分备份</h2>
+      <p id="score-import-summary">请核对即将恢复的昵称和余额。</p>
+      <div class="score-import-preview" id="score-import-preview"></div>
+      <p class="score-import-warning">同名玩家将更新余额；新昵称将新增玩家。其他现有玩家不会被删除。</p>
+      <div class="score-dialog-actions">
+        <button class="button button-ghost" type="button" id="cancel-score-import">取消</button>
+        <button class="button button-danger-soft" type="submit">确认导入</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="confirm-dialog" id="undo-dialog" aria-labelledby="undo-dialog-title">
+    <form method="dialog">
+      <h2 id="undo-dialog-title">确认要悔棋吗？</h2>
+      <p>本回合的全部移动将被撤销，并消耗 0.5 金币。</p>
+      <div class="confirm-actions">
+        <button class="button button-ghost" type="submit" value="cancel" id="cancel-undo">取消</button>
+        <button class="button button-danger-soft" type="submit" value="confirm" id="confirm-undo">悔棋</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="results-dialog" id="results-dialog" aria-labelledby="results-title">
+    <canvas class="fireworks-canvas" id="fireworks-canvas" aria-hidden="true"></canvas>
+    <section class="results-panel">
+      <button class="results-close" type="button" id="close-results" aria-label="关闭结算面板">×</button>
+      <p class="eyebrow">本局结算</p>
+      <h2 id="results-title">闪光时刻</h2>
+      <p class="results-lead">每一步都算数，看看这一局的排名和收获。</p>
+      <div class="results-list" id="results-list"></div>
+      <button class="button button-primary rematch-button" type="button" id="rematch-results">再来一局</button>
+    </section>
+  </dialog>
+
+  <script src="rules.js?v=3.3"></script>
+  <script src="profile-backup.js?v=3.3"></script>
+  <script src="vendor/canvas-confetti.browser.min.js?v=3.3"></script>
+  <script src="app.js?v=3.3"></script>
+</body>
+</html>
