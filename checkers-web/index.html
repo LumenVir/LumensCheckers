@@ -4,19 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="适合亲友在同一台设备上轮流玩的二至六人跳棋。">
-  <title>闪光跳棋 | Lumen's Checker v3.5</title>
+  <title>闪光跳棋 | Lumen's Checker v3.6</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="style.css?v=3.5">
+  <link rel="stylesheet" href="style.css?v=3.6">
 </head>
 <body>
   <main class="app-shell" id="checkers-app">
     <form class="card setup" id="player-form">
       <p class="eyebrow">闪光跳棋</p>
       <h1>今天谁来下棋？</h1>
-      <p class="setup-intro">点选参与状态；姓名和颜色需要时再展开。至少两位，最多一位简单电脑。</p>
+      <p class="setup-intro">点选参与状态；玩家姓名可选，颜色需要时再展开。至少两位，最多一位简单电脑。</p>
       <button class="setup-menu-button" type="button" id="open-score-vault" aria-label="打开积分保险箱" title="积分保险箱">•••</button>
       <div class="setup-grid">
-        <fieldset class="player-entry" data-seat-number="1" style="--seat-color:#e95122">
+        <fieldset class="player-entry" data-seat-number="1" style="--seat-color:#edc555">
           <legend class="sr-only">先手席位</legend>
           <span class="seat-number" aria-hidden="true">1</span><p class="seat-title">先手席位</p>
           <div class="player-kind optional-player-kind" role="radiogroup" aria-label="先手席位类型">
@@ -26,11 +26,11 @@
             <button type="button" data-kind="empty" role="radio" aria-checked="false">不参与</button>
           </div>
           <input class="player-name" id="player-1-name" type="hidden">
-          <input class="player-color" id="player-1-color" type="hidden" value="red">
-          <div class="seat-selectors"><button class="setup-select player-select" type="button" id="player-1-name-trigger"><span id="player-1-name-summary">选择玩家</span></button><button class="setup-select color-select" type="button" id="player-1-color-trigger"><i></i><span id="player-1-color-summary">红色</span></button></div>
+          <input class="player-color" id="player-1-color" type="hidden" value="rapunzelGold">
+          <div class="seat-selectors"><button class="setup-select player-select" type="button" id="player-1-name-trigger"><span id="player-1-name-summary">选择玩家</span></button><button class="setup-select color-select" type="button" id="player-1-color-trigger"><i></i><span id="player-1-color-summary">乐佩金黄</span></button></div>
           <p class="empty-player-note">本局不参与</p>
         </fieldset>
-        <fieldset class="player-entry" data-seat-number="2" style="--seat-color:#8239ee">
+        <fieldset class="player-entry" data-seat-number="2" style="--seat-color:#b72b4a">
           <legend class="sr-only">第二席位</legend>
           <span class="seat-number" aria-hidden="true">2</span><p class="seat-title">第二席位</p>
           <div class="player-kind optional-player-kind" role="radiogroup" aria-label="第二席位类型">
@@ -40,8 +40,8 @@
             <button type="button" data-kind="empty" role="radio" aria-checked="false">不参与</button>
           </div>
           <input class="player-name" id="player-2-name" type="hidden">
-          <input class="player-color" id="player-2-color" type="hidden" value="purple">
-          <div class="seat-selectors"><button class="setup-select player-select" type="button" id="player-2-name-trigger"><span id="player-2-name-summary">选择玩家</span></button><button class="setup-select color-select" type="button" id="player-2-color-trigger"><i></i><span id="player-2-color-summary">紫色</span></button></div>
+          <input class="player-color" id="player-2-color" type="hidden" value="arielRed">
+          <div class="seat-selectors"><button class="setup-select player-select" type="button" id="player-2-name-trigger"><span id="player-2-name-summary">选择玩家</span></button><button class="setup-select color-select" type="button" id="player-2-color-trigger"><i></i><span id="player-2-color-summary">人鱼红发</span></button></div>
           <p class="empty-player-note">本局不参与</p>
         </fieldset>
         <fieldset class="player-entry" data-seat-number="3" style="--seat-color:#2bb7b4">
@@ -102,7 +102,7 @@
         </fieldset>
       </div>
       <div class="setup-actions">
-        <p class="help" id="setup-help">请至少选择两位参与者。</p>
+        <p class="help" id="setup-help">玩家姓名可以不填，请确认棋子颜色。</p>
         <button class="button button-primary" type="submit" id="start-game" disabled>开始游戏</button>
       </div>
     </form>
@@ -215,9 +215,13 @@
             <section class="detail-block debug-menu" id="debug-menu">
               <p class="label">调试面板</p>
               <div class="mode-buttons">
-                <button class="button" type="button" id="random" aria-pressed="false">随机放置 · 5 枚</button>
+                <button class="button" type="button" id="random" aria-pressed="false">随机中局 · 24 枚</button>
                 <button class="button" type="button" id="victory" aria-pressed="false">结算测试 · 每方差一步</button>
               </div>
+              <label class="inactive-piece-tuner" for="inactive-white-mix">
+                <span>非当前玩家白色覆盖</span>
+                <span><input id="inactive-white-mix" type="range" min="0" max="85" step="5" value="50"><output id="inactive-white-mix-value" for="inactive-white-mix">50%</output></span>
+              </label>
               <p class="help">调试场景不计金币。</p>
               <div class="debug-info" aria-live="polite">
                 <p class="label">调试 ID</p>
@@ -349,10 +353,10 @@
     </section>
   </dialog>
 
-  <script src="rules.js?v=3.5"></script>
-  <script src="profile-backup.js?v=3.5"></script>
-  <script src="vault-access.js?v=3.5"></script>
-  <script src="vendor/canvas-confetti.browser.min.js?v=3.5"></script>
-  <script src="app.js?v=3.5"></script>
+  <script src="rules.js?v=3.6"></script>
+  <script src="profile-backup.js?v=3.6"></script>
+  <script src="vault-access.js?v=3.6"></script>
+  <script src="vendor/canvas-confetti.browser.min.js?v=3.6"></script>
+  <script src="app.js?v=3.6"></script>
 </body>
 </html>

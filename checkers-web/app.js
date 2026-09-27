@@ -84,6 +84,8 @@
     standard: $('#standard'),
     random: $('#random'),
     victory: $('#victory'),
+    inactiveWhiteMix: $('#inactive-white-mix'),
+    inactiveWhiteMixValue: $('#inactive-white-mix-value'),
     restart: $('#restart'),
     gameDetails: $('#game-details'),
     gameDetailsToggle: $('#game-details-toggle'),
@@ -133,6 +135,8 @@
   const ALL_CAMPS = CAMP_ORDER;
   const PROFILE_STORAGE_KEY = 'family-checkers-player-profiles-v1';
   const VAULT_ACCESS_STORAGE_KEY = 'family-checkers-vault-access-v1';
+  const LAST_STARTING_COLORS_STORAGE_KEY = 'family-checkers-last-starting-colors-v1';
+  const DEFAULT_STARTING_COLORS = ['rapunzelGold', 'arielRed'];
   const INITIAL_BALANCE_UNITS = 100;
   const UNDO_FEE_UNITS = 5;
   const COMPUTER_MAX_ROUTES = 120;
@@ -156,7 +160,7 @@
     cinderellaBlue: { colorName: '灰姑娘蓝', value: '#7894ad' },
   };
   let players = createPlayerCampLayout(3).map((camp, index) => ({
-    ...COLOR_META[['red', 'purple', 'green'][index]],
+    ...COLOR_META[['rapunzelGold', 'arielRed', 'green'][index]],
     camp,
     kind: 'human',
     name: '',
@@ -1062,6 +1066,31 @@
     ui.closeScoreVault.focus();
   }
 
+  function loadStartingColors() {
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(LAST_STARTING_COLORS_STORAGE_KEY) || 'null');
+      if (
+        Array.isArray(saved)
+        && saved.length === 2
+        && saved.every((color) => COLOR_META[color])
+        && saved[0] !== saved[1]
+      ) return saved;
+    } catch {
+      // 读取失败时使用首次默认颜色。
+    }
+    return DEFAULT_STARTING_COLORS;
+  }
+
+  function saveStartingColors() {
+    const selected = playerEntries.slice(0, 2).map(({ colorInput }) => colorInput.value);
+    if (selected.some((color) => !COLOR_META[color]) || selected[0] === selected[1]) return;
+    try {
+      window.localStorage.setItem(LAST_STARTING_COLORS_STORAGE_KEY, JSON.stringify(selected));
+    } catch {
+      // 颜色记忆失败不影响本局设置。
+    }
+  }
+
   let vaultAccessTimer = null;
   let vaultAccessRequestId = 0;
 
@@ -1555,6 +1584,7 @@
       option.addEventListener('click', () => {
         if (!activeSetupColorEntry || option.disabled) return;
         activeSetupColorEntry.colorInput.value = colorKey;
+        saveStartingColors();
         closeSetupColorDialog();
         validateNames();
       });
@@ -1601,23 +1631,26 @@
     updateSetupColorCards();
     updateProfileCards();
     const activeEntries = playerEntries.filter(({ kindInput }) => kindInput.value !== 'empty');
-    const names = activeEntries.map(({ nameInput }) => nameInput.value.trim());
-    const requiredNamesComplete = activeEntries.length >= 2 && activeEntries.every(({ nameInput }) => nameInput.value.trim());
+    const names = activeEntries.map(({ nameInput, number }) => nameInput.value.trim() || `玩家${number}`);
+    const enoughPlayers = activeEntries.length >= 2;
     const namesUnique = new Set(names.map(normalizeProfileName)).size === names.length;
     const colors = activeEntries.map(({ colorInput }) => colorInput.value);
-    const colorsUnique = new Set(colors).size === colors.length;
+    const colorsComplete = activeEntries.every(({ colorInput }) => Boolean(COLOR_META[colorInput.value]));
+    const colorsUnique = colorsComplete && new Set(colors).size === colors.length;
     const computerCount = activeEntries.filter(({ kindInput }) => kindInput.value === 'computer').length;
     const hasHumanPlayer = activeEntries.some(({ kindInput }) => kindInput.value === 'human');
     ui.start.textContent = `开始${activeEntries.length}人局`;
-    ui.start.disabled = !requiredNamesComplete
+    ui.start.disabled = !enoughPlayers
       || !namesUnique
       || !colorsUnique
       || computerCount > 1
       || !hasHumanPlayer;
-    ui.setupHelp.textContent = !requiredNamesComplete
-      ? '请至少选择两位参与者，并填写昵称。'
+    ui.setupHelp.textContent = !enoughPlayers
+      ? '请至少选择两位参与者。玩家姓名可以不填。'
       : !namesUnique
         ? '参与本局的玩家需要使用不同昵称，以便保存各自金币。'
+      : !colorsComplete
+        ? '请为参与本局的玩家选择棋子颜色。'
       : !colorsUnique
         ? '参与本局的玩家需要选择不同的棋子颜色。'
         : computerCount > 1
@@ -1628,8 +1661,10 @@
   }
 
   function startGame() {
-    const assignments = playerEntries.map(({ nameInput, kindInput, colorInput }) => ({
-      name: nameInput.value.trim(),
+    const assignments = playerEntries.map(({ number, nameInput, kindInput, colorInput }) => ({
+      number,
+      enteredName: nameInput.value.trim(),
+      name: nameInput.value.trim() || `玩家${number}`,
       kind: kindInput.value,
       color: colorInput.value,
       profileId: nameInput.dataset.profileId || null,
@@ -1638,17 +1673,20 @@
     })).filter(({ kind }) => kind !== 'empty');
     if (
       assignments.length < 2
-      || assignments.some(({ name }) => !name)
+      || assignments.some(({ color }) => !COLOR_META[color])
       || assignments.filter(({ kind }) => kind === 'computer').length > 1
       || assignments.every(({ kind }) => kind === 'computer')
       || new Set(assignments.map(({ name }) => normalizeProfileName(name))).size !== assignments.length
       || new Set(assignments.map(({ color }) => color)).size !== assignments.length
     ) return;
+    saveStartingColors();
 
     assignments.forEach((assignment) => {
       assignment.profile = assignment.kind === 'computer'
         ? { id: 'computer-simple', name: assignment.name, balanceUnits: INITIAL_BALANCE_UNITS }
-        : resolveProfile(assignment.name, assignment.profileId);
+        : assignment.enteredName
+          ? resolveProfile(assignment.name, assignment.profileId)
+          : { id: `guest-seat-${assignment.number}`, name: assignment.name, balanceUnits: INITIAL_BALANCE_UNITS };
     });
     const activeCamps = createPlayerCampLayout(assignments.length);
     players = activeCamps.map((camp, index) => {
@@ -2101,7 +2139,7 @@
     chooseMode(ui.random);
     const randomPieces = createRandomPieces({
       boardKeys,
-      count: 5,
+      count: 24,
       colors: players.map((player) => player.camp),
     });
     const description = [...randomPieces].map(([spotKey, piece]) => {
@@ -2130,6 +2168,11 @@
   });
   ui.gameDetailsToggle.addEventListener('click', () => {
     setGameDetailsOpen(ui.gameDetails.dataset.open !== 'true');
+  });
+  ui.inactiveWhiteMix.addEventListener('input', () => {
+    const whiteMix = Math.min(85, Math.max(0, Number(ui.inactiveWhiteMix.value) || 0));
+    root.style.setProperty('--inactive-piece-color-weight', `${100 - whiteMix}%`);
+    ui.inactiveWhiteMixValue.value = `${whiteMix}%`;
   });
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && ui.gameDetails.dataset.open === 'true') {
@@ -2167,6 +2210,10 @@
   pieces = createStandardPieces();
   startingPieces = new Map(pieces);
   startingText = '每方 10 枚棋子，按棋盘逆时针方向轮换。';
+  root.style.setProperty('--inactive-piece-color-weight', `${100 - Number(ui.inactiveWhiteMix.value)}%`);
+  loadStartingColors().forEach((color, index) => {
+    playerEntries[index].colorInput.value = color;
+  });
   buildColorCards();
   buildProfileCards();
   renderScoreVault();

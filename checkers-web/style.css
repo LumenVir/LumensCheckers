@@ -416,13 +416,11 @@ button { touch-action: manipulation; }
   text-align: left;
 }
 .setup-select span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.setup-select::after { content: '›'; width: 10px; flex: 0 0 10px; margin-left: auto; color: #9198a6; font-size: 18px; text-align: center; }
 .setup-select:hover:not(:disabled) { border-color: #9ba6c1; background: #fdfdff; }
 .setup-select:focus-visible { outline: 3px solid rgba(51, 79, 143, 0.18); outline-offset: 2px; }
 .color-select i { width: 21px; height: 21px; flex: 0 0 auto; border: 3px solid white; border-radius: 50%; background: var(--seat-color); box-shadow: 0 0 0 1px color-mix(in srgb, var(--seat-color) 62%, #aab1c0); }
 .player-entry[data-kind="computer"] .seat-number { background: #eceaf6; color: #655f8e; }
 .player-entry[data-kind="computer"] .player-select { border-style: dashed; background: #eeedf5; color: #65617b; cursor: default; }
-.player-entry[data-kind="computer"] .player-select::after { visibility: hidden; }
 .player-entry[data-kind="empty"] { background: rgba(245, 247, 251, 0.76); opacity: 0.7; }
 .player-entry[data-kind="empty"] .seat-selectors { display: none; }
 .player-entry[data-kind="empty"] .empty-player-note { display: block; grid-column: 2; grid-row: 2; margin: 0; text-align: left; }
@@ -932,6 +930,10 @@ button { touch-action: manipulation; }
 .value { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
 .help { margin: 7px 0 0; color: var(--muted); font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
 .mode-buttons { display: grid; gap: 8px; }
+.inactive-piece-tuner { display: grid; gap: 7px; margin-top: 12px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.inactive-piece-tuner > span:last-child { display: grid; grid-template-columns: minmax(0, 1fr) 42px; align-items: center; gap: 8px; }
+.inactive-piece-tuner input { width: 100%; accent-color: var(--focus); }
+.inactive-piece-tuner output { color: var(--text); font-variant-numeric: tabular-nums; text-align: right; }
 .export-button { width: 100%; margin-top: 12px; background: #fff7d9; border-color: #e2c56c; }
 
 .debug-info {
@@ -1128,18 +1130,18 @@ button { touch-action: manipulation; }
 .spot.is-legal .cell { stroke: var(--move); stroke-width: 2; }
 
 .piece {
-  fill: var(--piece-color);
+  fill: color-mix(in srgb, var(--piece-color) var(--inactive-piece-color-weight, 50%), white);
   stroke: #fffdf8;
   stroke-width: 3.2;
   pointer-events: none;
   transform-box: fill-box;
   transform-origin: center;
   fill-opacity: 1;
-  opacity: 0.78;
-  transition: opacity 0.18s ease;
+  opacity: 1;
+  transition: fill 0.18s ease;
 }
 
-.piece.is-active { opacity: 1; }
+.piece.is-active { fill: var(--piece-color); }
 .spot.is-pivot .piece { stroke: var(--move); stroke-width: 4; }
 .pulse { fill: none; stroke: var(--move); stroke-width: 3; }
 .caption { fill: var(--muted); font-size: 13px; }
