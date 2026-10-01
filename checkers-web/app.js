@@ -346,7 +346,7 @@
 
   function startTurnClock() {
     clearTurnClock();
-    if (gameOver || now().kind === 'computer') {
+    if (matchStartedAt === null || gameOver || now().kind === 'computer') {
       updateClockUi();
       return;
     }
@@ -725,6 +725,10 @@
     committed = true;
     renderPieces();
     landingPulse(target);
+    if (matchStartedAt === null) {
+      matchStartedAt = new Date();
+      startTurnClock();
+    }
 
     const [q, r] = destination.split(',').map(Number);
     if (moveRule.type === 'jump') {
@@ -972,7 +976,7 @@
     finished = [];
     gameOver = false;
     winEnabled = canWin;
-    matchStartedAt = new Date();
+    matchStartedAt = null;
     matchEndedAt = null;
     resetCoinMatch(enableCoins);
     resetMatchClock();
@@ -981,7 +985,7 @@
     renderPieces();
     ui.status.textContent = `请${playerLabel(now())}选择棋子`;
     ui.list.textContent = '细描边表示可以到达。';
-    startTurnClock();
+    updateClockUi();
     scheduleComputerTurn();
   }
 
