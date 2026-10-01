@@ -1130,19 +1130,20 @@ button { touch-action: manipulation; }
 .spot.is-legal .cell { stroke: var(--move); stroke-width: 2; }
 
 .piece {
-  fill: color-mix(in srgb, var(--piece-color) var(--inactive-piece-color-weight, 50%), white);
-  stroke: #fffdf8;
-  stroke-width: 3.2;
   pointer-events: none;
   transform-box: fill-box;
   transform-origin: center;
-  fill-opacity: 1;
   opacity: 1;
-  transition: fill 0.18s ease;
 }
 
-.piece.is-active { fill: var(--piece-color); }
-.spot.is-pivot .piece { stroke: var(--move); stroke-width: 4; }
+.piece-crown-shape {
+  fill: color-mix(in srgb, var(--piece-color) var(--inactive-piece-color-weight, 50%), white);
+  stroke: none;
+  fill-opacity: 1;
+  transition: fill 0.18s ease;
+}
+.piece.is-active .piece-crown-shape { fill: var(--piece-color); }
+.spot.is-pivot .piece-crown-shape { stroke: var(--move); stroke-width: 3; }
 .pulse { fill: none; stroke: var(--move); stroke-width: 3; }
 .caption { fill: var(--muted); font-size: 13px; }
 

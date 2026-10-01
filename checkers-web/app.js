@@ -137,6 +137,14 @@
   const VAULT_ACCESS_STORAGE_KEY = 'family-checkers-vault-access-v1';
   const LAST_STARTING_COLORS_STORAGE_KEY = 'family-checkers-last-starting-colors-v1';
   const DEFAULT_STARTING_COLORS = ['rapunzelGold', 'arielRed'];
+  const PIECE_ROTATION_BY_CAMP = {
+    red: 180,
+    upperLeft: 120,
+    purple: 60,
+    bottom: 0,
+    green: -60,
+    upperRight: -120,
+  };
   const INITIAL_BALANCE_UNITS = 100;
   const UNDO_FEE_UNITS = 5;
   const COMPUTER_MAX_ROUTES = 120;
@@ -615,15 +623,23 @@
       if (!piece) continue;
 
       group.classList.add('has-piece');
-      const token = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      const token = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       const owner = playerForCamp(piece.color);
       token.setAttribute('class', `piece${piece.color === now().camp ? ' is-active' : ''}`);
       token.style.setProperty('--piece-color', owner?.value || COLOR_META[piece.color]?.value || '#687083');
       token.dataset.ownerCamp = piece.color;
-      token.setAttribute('cx', group.dataset.x);
-      token.setAttribute('cy', group.dataset.y);
-      token.setAttribute('r', '12');
       token.dataset.pieceId = piece.id;
+
+      // Crown path adapted from Lucide Crown (ISC): https://lucide.dev/icons/crown
+      const crownShape = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      crownShape.setAttribute('class', 'piece-crown-shape');
+      crownShape.setAttribute('d', 'M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z M5 17.8h14v3.2H5z');
+      crownShape.setAttribute(
+        'transform',
+        `translate(${group.dataset.x} ${group.dataset.y}) rotate(${PIECE_ROTATION_BY_CAMP[piece.color] || 0}) scale(1.4) translate(-12 -12)`,
+      );
+
+      token.appendChild(crownShape);
       group.appendChild(token);
     }
     updateTurnUi();
