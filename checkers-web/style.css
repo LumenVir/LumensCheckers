@@ -930,15 +930,7 @@ button { touch-action: manipulation; }
 .value { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
 .help { margin: 7px 0 0; color: var(--muted); font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
 .mode-buttons { display: grid; gap: 8px; }
-.game-preferences { display: grid; gap: 12px; }
-.game-preferences .label { margin-bottom: 0; }
-.se-toggle { display: flex; min-height: 32px; align-items: center; justify-content: space-between; gap: 12px; color: var(--text); font-size: 13px; font-weight: 750; cursor: pointer; }
-.se-toggle input { position: relative; width: 42px; height: 24px; margin: 0; appearance: none; border: 1px solid #b8bfcd; border-radius: 999px; background: #dfe3eb; cursor: pointer; transition: background .16s ease, border-color .16s ease; }
-.se-toggle input::after { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: white; box-shadow: 0 1px 4px rgba(37, 45, 68, .25); content: ''; transition: transform .16s ease; }
-.se-toggle input:checked { border-color: var(--focus); background: var(--focus); }
-.se-toggle input:checked::after { transform: translateX(18px); }
-.se-toggle input:focus-visible { outline: 3px solid rgba(51, 79, 143, .2); outline-offset: 2px; }
-.inactive-piece-tuner { display: grid; gap: 7px; color: var(--muted); font-size: 12px; font-weight: 700; }
+.inactive-piece-tuner { display: grid; gap: 7px; margin-top: 12px; color: var(--muted); font-size: 12px; font-weight: 700; }
 .inactive-piece-tuner > span:last-child { display: grid; grid-template-columns: minmax(0, 1fr) 42px; align-items: center; gap: 8px; }
 .inactive-piece-tuner input { width: 100%; accent-color: var(--focus); }
 .inactive-piece-tuner output { color: var(--text); font-variant-numeric: tabular-nums; text-align: right; }

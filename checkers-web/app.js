@@ -84,7 +84,6 @@
     standard: $('#standard'),
     random: $('#random'),
     victory: $('#victory'),
-    seEnabled: $('#se-enabled'),
     inactiveWhiteMix: $('#inactive-white-mix'),
     inactiveWhiteMixValue: $('#inactive-white-mix-value'),
     restart: $('#restart'),
@@ -138,8 +137,6 @@
   const VAULT_ACCESS_STORAGE_KEY = 'family-checkers-vault-access-v1';
   const LAST_STARTING_COLORS_STORAGE_KEY = 'family-checkers-last-starting-colors-v1';
   const DEFAULT_STARTING_COLORS = ['rapunzelGold', 'arielRed'];
-  const pieceMoveSound = new Audio('sounds/piece-land.wav');
-  pieceMoveSound.preload = 'auto';
   const INITIAL_BALANCE_UNITS = 100;
   const UNDO_FEE_UNITS = 5;
   const COMPUTER_MAX_ROUTES = 120;
@@ -220,36 +217,6 @@
   let fireworks = null;
   let fireworksTimer = null;
   let celebrationRunId = 0;
-  let pieceMoveSoundUnlocked = false;
-
-  function unlockPieceMoveSound() {
-    if (pieceMoveSoundUnlocked) return;
-    pieceMoveSound.muted = true;
-    pieceMoveSound.play().then(() => {
-      pieceMoveSound.pause();
-      pieceMoveSound.currentTime = 0;
-      pieceMoveSound.muted = false;
-      pieceMoveSoundUnlocked = true;
-      document.removeEventListener('pointerdown', unlockPieceMoveSound, true);
-      document.removeEventListener('keydown', unlockPieceMoveSound, true);
-    }).catch(() => {
-      pieceMoveSound.muted = false;
-    });
-  }
-
-  function playPieceMoveSound() {
-    if (!ui.seEnabled.checked) return;
-    try {
-      pieceMoveSound.pause();
-      pieceMoveSound.currentTime = 0;
-      pieceMoveSound.play().catch(() => {});
-    } catch {
-      // 音效播放失败不影响走棋。
-    }
-  }
-
-  document.addEventListener('pointerdown', unlockPieceMoveSound, true);
-  document.addEventListener('keydown', unlockPieceMoveSound, true);
   let resultsOpenTimer = null;
   let activeSetupPlayerEntry = null;
   let activeSetupColorEntry = null;
@@ -379,7 +346,7 @@
 
   function startTurnClock() {
     clearTurnClock();
-    if (matchStartedAt === null || gameOver || now().kind === 'computer') {
+    if (gameOver || now().kind === 'computer') {
       updateClockUi();
       return;
     }
@@ -728,8 +695,6 @@
         { transform: `translate(${dx}px, ${dy}px) scale(1)` },
       ];
 
-    playPieceMoveSound();
-    await new Promise((resolve) => window.setTimeout(resolve, 200));
     await token.animate(keyframes, {
       duration,
       easing: moveRule.type === 'step' ? 'ease-out' : 'cubic-bezier(.22,.72,.25,1)',
@@ -760,10 +725,6 @@
     committed = true;
     renderPieces();
     landingPulse(target);
-    if (matchStartedAt === null) {
-      matchStartedAt = new Date();
-      startTurnClock();
-    }
 
     const [q, r] = destination.split(',').map(Number);
     if (moveRule.type === 'jump') {
@@ -1011,7 +972,7 @@
     finished = [];
     gameOver = false;
     winEnabled = canWin;
-    matchStartedAt = null;
+    matchStartedAt = new Date();
     matchEndedAt = null;
     resetCoinMatch(enableCoins);
     resetMatchClock();
@@ -1020,7 +981,7 @@
     renderPieces();
     ui.status.textContent = `请${playerLabel(now())}选择棋子`;
     ui.list.textContent = '细描边表示可以到达。';
-    updateClockUi();
+    startTurnClock();
     scheduleComputerTurn();
   }
 
@@ -2207,11 +2168,6 @@
   });
   ui.gameDetailsToggle.addEventListener('click', () => {
     setGameDetailsOpen(ui.gameDetails.dataset.open !== 'true');
-  });
-  ui.seEnabled.addEventListener('change', () => {
-    if (ui.seEnabled.checked) return;
-    pieceMoveSound.pause();
-    pieceMoveSound.currentTime = 0;
   });
   ui.inactiveWhiteMix.addEventListener('input', () => {
     const whiteMix = Math.min(85, Math.max(0, Number(ui.inactiveWhiteMix.value) || 0));
