@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="适合亲友在同一台设备上轮流玩的二至六人跳棋。">
-  <title>闪光跳棋 | Lumen's Checker v3.6</title>
+  <title>闪光跳棋 | Lumen's Checker v3.7</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="style.css?v=3.6">
+  <link rel="stylesheet" href="style.css?v=3.7">
 </head>
 <body>
   <main class="app-shell" id="checkers-app">
@@ -181,6 +181,18 @@
             <i aria-hidden="true">⌄</i>
           </button>
           <div class="game-details-body" id="game-details-body">
+            <section class="detail-block game-preferences">
+              <p class="label">显示与声音</p>
+              <label class="se-toggle" for="se-enabled">
+                <span>SE</span>
+                <input id="se-enabled" type="checkbox" role="switch" checked>
+              </label>
+              <label class="inactive-piece-tuner" for="inactive-white-mix">
+                <span>非当前玩家白色覆盖</span>
+                <span><input id="inactive-white-mix" type="range" min="0" max="85" step="5" value="50"><output id="inactive-white-mix-value" for="inactive-white-mix">50%</output></span>
+              </label>
+            </section>
+
             <section class="detail-block">
               <p class="label">棋局</p>
               <div class="mode-buttons">
@@ -218,10 +230,6 @@
                 <button class="button" type="button" id="random" aria-pressed="false">随机中局 · 24 枚</button>
                 <button class="button" type="button" id="victory" aria-pressed="false">结算测试 · 每方差一步</button>
               </div>
-              <label class="inactive-piece-tuner" for="inactive-white-mix">
-                <span>非当前玩家白色覆盖</span>
-                <span><input id="inactive-white-mix" type="range" min="0" max="85" step="5" value="50"><output id="inactive-white-mix-value" for="inactive-white-mix">50%</output></span>
-              </label>
               <p class="help">调试场景不计金币。</p>
               <div class="debug-info" aria-live="polite">
                 <p class="label">调试 ID</p>
@@ -353,10 +361,10 @@
     </section>
   </dialog>
 
-  <script src="rules.js?v=3.6"></script>
-  <script src="profile-backup.js?v=3.6"></script>
-  <script src="vault-access.js?v=3.6"></script>
-  <script src="vendor/canvas-confetti.browser.min.js?v=3.6"></script>
-  <script src="app.js?v=3.6"></script>
+  <script src="rules.js?v=3.7"></script>
+  <script src="profile-backup.js?v=3.7"></script>
+  <script src="vault-access.js?v=3.7"></script>
+  <script src="vendor/canvas-confetti.browser.min.js?v=3.7"></script>
+  <script src="app.js?v=3.7"></script>
 </body>
 </html>

@@ -4,7 +4,7 @@
 
 作者：Lumen与家人、Dorothy（CodexAgent)。玩法与体验来自家庭对局和持续反馈，Dorothy 参与了设计、代码实现与测试。
 
-当前版本：**v3.5**。版本变化见 [更新日志](CHANGELOG.md)，后续计划见 [待办事项](TODO.md)。
+当前版本：**v3.7**。版本变化见 [更新日志](CHANGELOG.md)，后续计划见 [待办事项](TODO.md)。
 
 ## 游戏功能
 
@@ -14,6 +14,8 @@
 - 整回合悔棋、正计时、胜利排名与结算动画
 - 玩家卡片、本局金币、长期余额和名次奖励
 - 本地积分保险箱，支持导入和导出积分备份
+- 棋子起步音效，可在棋局详情中随时关闭
+- 进入棋盘后暂不计时，先手玩家首次落子后开始全局计时
 - 电脑与 iPad 横屏布局，棋盘四角均可结束回合
 - 棋盘落点和棋子具有独立调试 ID
 
@@ -37,7 +39,7 @@ python3 -m http.server 8000 --directory checkers-web
 运行规则和积分备份测试需要 Node.js：
 
 ```bash
-node --test checkers-web/rules.test.js checkers-web/profile-backup.test.js
+node --test checkers-web/rules.test.js checkers-web/profile-backup.test.js checkers-web/vault-access.test.js
 node --check checkers-web/app.js
 ```
 
@@ -50,6 +52,7 @@ node --check checkers-web/app.js
 | `checkers-web/app.js` | 回合、动画、计分和交互 |
 | `checkers-web/rules.js` | 棋盘、合法落点、电脑策略和胜利规则 |
 | `checkers-web/profile-backup.js` | 玩家积分备份格式 |
+| `checkers-web/sounds/` | 游戏音效资源 |
 | `checkers-web/*.test.js` | 规则与备份测试 |
 | `docs/` | 棋局设计方案与界面原型 |
 | `CHANGELOG.md`、`TODO.md` | 版本记录与待办事项 |
