@@ -3,12 +3,15 @@ const {
   CAMP_ORDER,
   OPPOSITE_CAMP,
   applyCoinEarnings,
+  calculateComboReward,
+  calculateTargetAssignmentDistance,
   chooseSimpleComputerRoute,
   calculateJumpReward,
   calculateLegalMoves,
   calculateRankReward,
   calculateTargetReward,
   createBoardKeys,
+  createCampKeys,
   createPiecesForCamps,
   createPlayerCampLayout,
   createRandomPieces,
@@ -134,6 +137,10 @@ assert.deepEqual(
 );
 assert.equal(calculateJumpReward({ jumpNumber: 6, distance: 1 }).continuousUnits, 1);
 assert.equal(calculateJumpReward({ jumpNumber: 7, distance: 1 }).continuousUnits, 0);
+assert.equal(calculateComboReward({ freshJumpCount: 3 }), 0);
+assert.equal(calculateComboReward({ freshJumpCount: 4 }), 1);
+assert.equal(calculateComboReward({ freshJumpCount: 5 }), 2);
+assert.equal(calculateComboReward({ freshJumpCount: 10 }), 7);
 assert.equal(formatCoinUnits(100), '10.0');
 assert.equal(formatCoinUnits(3, true), '+0.3');
 assert.equal(formatCoinUnits(-5, true), '-0.5');
@@ -145,9 +152,10 @@ assert.equal(roundTurnSeconds(1001), 2);
 assert.equal(formatClockSeconds(0), '00:00');
 assert.equal(formatClockSeconds(65), '01:05');
 assert.equal(formatClockSeconds(3661), '1:01:01');
-assert.equal(settleTurnReward({ jumpUnits: 3, targetUnits: 8, undoUsed: false }), 11);
-assert.equal(settleTurnReward({ jumpUnits: 3, targetUnits: 8, undoUsed: true }), 6);
-assert.equal(settleTurnReward({ jumpUnits: 0, targetUnits: 0, undoUsed: true }), -5);
+assert.equal(settleTurnReward({ jumpUnits: 3, targetUnits: 8, undoCount: 0 }), 11);
+assert.equal(settleTurnReward({ jumpUnits: 3, targetUnits: 8, undoCount: 1 }), 11);
+assert.equal(settleTurnReward({ jumpUnits: 3, targetUnits: 8, undoCount: 2 }), 6);
+assert.equal(settleTurnReward({ jumpUnits: 0, targetUnits: 0, undoCount: 4 }), -15);
 assert.equal(calculateRankReward(1), 30);
 assert.equal(calculateRankReward(2), 20);
 assert.equal(calculateRankReward(3), 10);
@@ -222,5 +230,83 @@ assert.equal(chooseSimpleComputerRoute({
   maxJumpDepth: 12,
   random: () => 0,
 }).pieceId, 'R-BACK');
+
+for (const camp of CAMP_ORDER) {
+  assert.equal(createCampKeys(camp).size, 10);
+  assert.equal(calculateTargetAssignmentDistance({
+    positions: [...createTargetCampKeys(camp)],
+    targetKeys: createTargetCampKeys(camp),
+  }), 0);
+}
+
+const redTargetKeys = createTargetCampKeys('red');
+const missingRedTarget = '-2,5';
+const endgamePieces = new Map(
+  [...redTargetKeys]
+    .filter((key) => key !== missingRedTarget)
+    .map((key, index) => [key, { color: 'red', id: `R-TARGET-${index + 1}` }]),
+);
+endgamePieces.set('0,3', { color: 'red', id: 'R-LAST' });
+const endgameMove = chooseSimpleComputerRoute({
+  boardKeys,
+  pieces: endgamePieces,
+  color: 'red',
+  random: () => 0,
+});
+assert.equal(endgameMove.pieceId, 'R-LAST');
+assert.equal(endgameMove.to, '-1,4');
+
+const avoidRecentMove = chooseSimpleComputerRoute({
+  boardKeys,
+  pieces: new Map([['0,0', { color: 'red', id: 'R-RECENT' }]]),
+  color: 'red',
+  recentPositions: new Map([['R-RECENT', ['0,1']]]),
+  random: () => 0,
+});
+assert.notEqual(avoidRecentMove.to, '0,1');
+
+const sixPlayerOpening = createPiecesForCamps(CAMP_ORDER);
+for (const color of CAMP_ORDER) {
+  const forbiddenOuterKeys = new Set(CAMP_ORDER
+    .filter((camp) => camp !== color && camp !== OPPOSITE_CAMP[color])
+    .flatMap((camp) => [...createCampKeys(camp)]));
+  const routes = enumerateSimpleComputerRoutes({
+    boardKeys,
+    pieces: sixPlayerOpening,
+    color,
+  });
+  assert.equal(routes.every(({ to }) => !forbiddenOuterKeys.has(to)), true);
+}
+
+let sixComputerPieces = createPiecesForCamps(CAMP_ORDER);
+const finishedComputerCamps = new Set();
+const recentComputerPositions = new Map();
+let consecutivePasses = 0;
+for (let turn = 0; turn < 240 && finishedComputerCamps.size < CAMP_ORDER.length; turn += 1) {
+  const color = CAMP_ORDER[turn % CAMP_ORDER.length];
+  if (finishedComputerCamps.has(color)) continue;
+  const route = chooseSimpleComputerRoute({
+    boardKeys,
+    pieces: sixComputerPieces,
+    color,
+    recentPositions: recentComputerPositions,
+    random: () => 0,
+  });
+  if (!route) {
+    consecutivePasses += 1;
+    assert.equal(consecutivePasses < CAMP_ORDER.length, true);
+    continue;
+  }
+  consecutivePasses = 0;
+  const piece = sixComputerPieces.get(route.from);
+  sixComputerPieces.delete(route.from);
+  sixComputerPieces.set(route.to, piece);
+  recentComputerPositions.set(
+    route.pieceId,
+    [...(recentComputerPositions.get(route.pieceId) || []), route.from, route.to].slice(-6),
+  );
+  if (hasPlayerWon({ pieces: sixComputerPieces, color })) finishedComputerCamps.add(color);
+}
+assert.equal(finishedComputerCamps.size, CAMP_ORDER.length);
 
 console.log('checkers web rules: all tests passed');

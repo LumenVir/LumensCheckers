@@ -4,16 +4,16 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="适合亲友在同一台设备上轮流玩的二至六人跳棋。">
-  <title>闪光跳棋 | Lumen's Checker v3.6.1</title>
+  <title>闪光跳棋 | Lumen's Checker v3.7.0</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="style.css?v=3.6.1">
+  <link rel="stylesheet" href="style.css?v=3.7.0">
 </head>
 <body>
   <main class="app-shell" id="checkers-app">
     <form class="card setup" id="player-form">
       <p class="eyebrow">闪光跳棋</p>
       <h1>今天谁来下棋？</h1>
-      <p class="setup-intro">点选参与状态；玩家姓名可选，颜色需要时再展开。至少两位，最多一位简单电脑。</p>
+      <p class="setup-intro">点选参与状态；玩家姓名可选，颜色需要时再展开。至少两位，电脑玩家数量不限。</p>
       <button class="setup-menu-button" type="button" id="open-score-vault" aria-label="打开积分保险箱" title="积分保险箱">•••</button>
       <div class="setup-grid">
         <fieldset class="player-entry" data-seat-number="1" style="--seat-color:#edc555">
@@ -330,10 +330,10 @@
     </form>
   </dialog>
 
-  <dialog class="confirm-dialog" id="undo-dialog" aria-labelledby="undo-dialog-title">
+  <dialog class="confirm-dialog" id="undo-dialog" aria-labelledby="undo-dialog-title" aria-describedby="undo-dialog-description">
     <form method="dialog">
       <h2 id="undo-dialog-title">确认要悔棋吗？</h2>
-      <p>本回合的全部移动将被撤销，并消耗 0.5 金币。</p>
+      <p id="undo-dialog-description">本回合的全部移动将被撤销。本回合第一次悔棋免费。</p>
       <div class="confirm-actions">
         <button class="button button-ghost" type="submit" value="cancel" id="cancel-undo">取消</button>
         <button class="button button-danger-soft" type="submit" value="confirm" id="confirm-undo">悔棋</button>
@@ -353,10 +353,10 @@
     </section>
   </dialog>
 
-  <script src="rules.js?v=3.6.1"></script>
-  <script src="profile-backup.js?v=3.6.1"></script>
-  <script src="vault-access.js?v=3.6.1"></script>
-  <script src="vendor/canvas-confetti.browser.min.js?v=3.6.1"></script>
-  <script src="app.js?v=3.6.1"></script>
+  <script src="rules.js?v=3.7.0"></script>
+  <script src="profile-backup.js?v=3.7.0"></script>
+  <script src="vault-access.js?v=3.7.0"></script>
+  <script src="vendor/canvas-confetti.browser.min.js?v=3.7.0"></script>
+  <script src="app.js?v=3.7.0"></script>
 </body>
 </html>

@@ -6,6 +6,7 @@
     DIRECTIONS,
     OPPOSITE_CAMP,
     applyCoinEarnings,
+    calculateComboReward,
     chooseSimpleComputerRoute,
     calculateJumpReward,
     calculateLegalMoves,
@@ -90,6 +91,7 @@
     gameDetails: $('#game-details'),
     gameDetailsToggle: $('#game-details-toggle'),
     undoDialog: document.getElementById('undo-dialog'),
+    undoDialogDescription: document.getElementById('undo-dialog-description'),
     confirmUndo: document.getElementById('confirm-undo'),
     cancelUndo: document.getElementById('cancel-undo'),
     resultsDialog: document.getElementById('results-dialog'),
@@ -137,6 +139,7 @@
   const VAULT_ACCESS_STORAGE_KEY = 'family-checkers-vault-access-v1';
   const LAST_STARTING_COLORS_STORAGE_KEY = 'family-checkers-last-starting-colors-v1';
   const DEFAULT_STARTING_COLORS = ['rapunzelGold', 'arielRed'];
+  const COMPUTER_NAMES = ['艾莎', '安娜', '乐佩', '爱丽儿', '贝儿', '茉莉'];
   const INITIAL_BALANCE_UNITS = 100;
   const UNDO_FEE_UNITS = 5;
   const COMPUTER_MAX_ROUTES = 120;
@@ -198,8 +201,8 @@
   let matchCoinUnits = new Map();
   let matchRankRewardUnits = new Map();
   let turnRewardUnits = 0;
-  let jumpCount = 0;
-  let undoFeeApplied = false;
+  let freshJumpCount = 0;
+  let undoCount = 0;
   let turnPieceId = null;
   let turnVisitedKeys = new Set();
   let lastLandingFresh = false;
@@ -210,6 +213,8 @@
   let matchEndedAt = null;
   let computerRunning = false;
   let computerTurnToken = 0;
+  let computerRecentPositions = new Map();
+  let consecutiveComputerPasses = 0;
   let matchTimeSeconds = new Map();
   let turnTimeHistory = [];
   let turnStartedAt = null;
@@ -294,8 +299,8 @@
 
   function resetTurnLedger() {
     turnRewardUnits = 0;
-    jumpCount = 0;
-    undoFeeApplied = false;
+    freshJumpCount = 0;
+    undoCount = 0;
     turnPieceId = null;
     turnVisitedKeys = new Set();
     lastLandingFresh = false;
@@ -429,6 +434,33 @@
     pop.append(icon, amount);
     ui.stage.appendChild(pop);
     window.setTimeout(() => pop.remove(), 950);
+  }
+
+  function playerFacingRotation(camp) {
+    return {
+      bottom: 0,
+      purple: 60,
+      upperLeft: 120,
+      red: 180,
+      upperRight: -120,
+      green: -60,
+    }[camp] || 0;
+  }
+
+  function showComboFloat(group, count) {
+    if (!group || count < 4) return;
+    const pop = document.createElement('div');
+    pop.className = `combo-pop${count >= 6 ? ' is-strong' : ''}`;
+    pop.style.left = `${(Number(group.dataset.x) / BOARD_WIDTH) * 100}%`;
+    pop.style.top = `${(Number(group.dataset.y) / BOARD_HEIGHT) * 100}%`;
+    pop.style.setProperty('--player-facing-rotation', `${playerFacingRotation(now().camp)}deg`);
+
+    const content = document.createElement('span');
+    content.className = 'combo-pop-content';
+    content.textContent = `${count}连跳${count >= 6 ? '！！' : '！'}`;
+    pop.appendChild(content);
+    ui.stage.appendChild(pop);
+    window.setTimeout(() => pop.remove(), 1050);
   }
 
   function settleMatchCoins() {
@@ -708,7 +740,7 @@
         pieces: new Map(pieces),
         lockedPieceId,
         committed,
-        jumpCount,
+        freshJumpCount,
         turnRewardUnits,
         turnPieceId,
         turnVisitedKeys: new Set(turnVisitedKeys),
@@ -723,6 +755,7 @@
     turnPieceId = selection.piece.id;
     animating = false;
     committed = true;
+    consecutiveComputerPasses = 0;
     renderPieces();
     landingPulse(target);
     if (matchStartedAt === null) {
@@ -732,11 +765,16 @@
 
     const [q, r] = destination.split(',').map(Number);
     if (moveRule.type === 'jump') {
-      jumpCount += 1;
-      if (coinsEnabled && lastLandingFresh) {
-        const reward = calculateJumpReward({ jumpNumber: jumpCount, distance: moveRule.distance });
-        turnRewardUnits += reward.totalUnits;
-        showCoinFloat(target, reward.totalUnits);
+      if (lastLandingFresh) {
+        freshJumpCount += 1;
+        const reward = calculateJumpReward({ jumpNumber: freshJumpCount, distance: moveRule.distance });
+        const comboUnits = calculateComboReward({ freshJumpCount });
+        const awardedUnits = reward.totalUnits + comboUnits;
+        if (coinsEnabled) {
+          turnRewardUnits += awardedUnits;
+          showCoinFloat(target, awardedUnits);
+        }
+        showComboFloat(target, freshJumpCount);
       }
       lockedPieceId = selection.piece.id;
       showLegalMoves(target, q, r, selection.piece, true);
@@ -759,15 +797,15 @@
 
   function undo() {
     if (history.length === 0 || animating || computerRunning || now().kind === 'computer') return;
-    const chargeUndoFee = coinsEnabled && !undoFeeApplied;
+    undoCount += 1;
+    const chargeUndoFee = coinsEnabled && undoCount > 1;
     const undonePieceId = turnPieceId;
-    if (chargeUndoFee) undoFeeApplied = true;
     const previous = history[0];
     history = [];
     pieces = new Map(previous.pieces);
     lockedPieceId = previous.lockedPieceId;
     committed = previous.committed;
-    jumpCount = previous.jumpCount;
+    freshJumpCount = previous.freshJumpCount;
     turnRewardUnits = previous.turnRewardUnits;
     turnPieceId = previous.turnPieceId;
     turnVisitedKeys = new Set(previous.turnVisitedKeys);
@@ -779,7 +817,11 @@
       showCoinFloat(groups.get(restoredPosition), -UNDO_FEE_UNITS);
     }
 
-    ui.status.textContent = `已恢复到本回合开始${chargeUndoFee ? '，本回合悔棋费 -0.5' : ''}`;
+    ui.status.textContent = !coinsEnabled
+      ? '已恢复到本回合开始'
+      : chargeUndoFee
+        ? '已恢复到本回合开始，悔棋费 -0.5'
+        : '已恢复到本回合开始，本回合第一次悔棋免费';
     ui.list.textContent = '本回合走法已全部撤销，请重新选择棋子。';
     updateTurnUi();
   }
@@ -791,6 +833,11 @@
 
   function openUndoDialog() {
     if (ui.undo.disabled) return;
+    ui.undoDialogDescription.textContent = !coinsEnabled
+      ? '本回合的全部移动将被撤销。'
+      : undoCount === 0
+        ? '本回合的全部移动将被撤销。本回合第一次悔棋免费。'
+        : '本回合的全部移动将被撤销，并消耗 0.5 金币。';
     if (typeof ui.undoDialog.showModal === 'function') ui.undoDialog.showModal();
     else ui.undoDialog.setAttribute('open', '');
     ui.cancelUndo.focus();
@@ -978,6 +1025,8 @@
     winEnabled = canWin;
     matchStartedAt = null;
     matchEndedAt = null;
+    computerRecentPositions = new Map();
+    consecutiveComputerPasses = 0;
     resetCoinMatch(enableCoins);
     resetMatchClock();
     pieces = new Map(nextPieces);
@@ -1001,6 +1050,23 @@
     colorButton: $(`#player-${number}-color-trigger`),
     colorSummary: $(`#player-${number}-color-summary`),
   }));
+
+  function assignComputerNames() {
+    const usedNames = new Set(playerEntries
+      .filter(({ kindInput, nameInput }) => kindInput.value === 'human' && nameInput.value.trim())
+      .map(({ nameInput }) => normalizeProfileName(nameInput.value)));
+    playerEntries.filter(({ kindInput }) => kindInput.value === 'computer').forEach((entry) => {
+      const orderedNames = [
+        ...COMPUTER_NAMES.slice(entry.number - 1),
+        ...COMPUTER_NAMES.slice(0, entry.number - 1),
+      ];
+      const name = orderedNames.find((candidate) => !usedNames.has(normalizeProfileName(candidate)))
+        || `公主${entry.number}`;
+      entry.nameInput.value = name;
+      delete entry.nameInput.dataset.profileId;
+      usedNames.add(normalizeProfileName(name));
+    });
+  }
 
   function createCoinIcon() {
     const icon = document.createElement('i');
@@ -1440,7 +1506,7 @@
     if (kind === 'computer' && previousKind !== 'computer') {
       entry.nameInput.dataset.humanName = entry.nameInput.value;
       entry.nameInput.dataset.humanProfileId = entry.nameInput.dataset.profileId || '';
-      entry.nameInput.value = 'Lumen';
+      entry.nameInput.value = '';
       delete entry.nameInput.dataset.profileId;
     } else if (kind === 'human' && previousKind === 'computer') {
       entry.nameInput.value = entry.nameInput.dataset.humanName || '';
@@ -1458,13 +1524,8 @@
   }
 
   function chooseEntryKind(entry, kind) {
-    if (kind === 'computer') {
-      const previousComputer = playerEntries.find((candidate) => (
-        candidate !== entry && candidate.kindInput.value === 'computer'
-      ));
-      if (previousComputer) setEntryKind(previousComputer, 'human');
-    }
     setEntryKind(entry, kind);
+    assignComputerNames();
   }
 
   function updateProfileCards() {
@@ -1475,9 +1536,7 @@
         : entry.nameInput.value.trim();
       entry.nameButton.disabled = entry.kindInput.value !== 'human';
       entry.colorButton.disabled = entry.kindInput.value === 'empty';
-      entry.fieldset.querySelector('.seat-number').textContent = entry.kindInput.value === 'computer'
-        ? 'L'
-        : String(entry.number);
+      entry.fieldset.querySelector('.seat-number').textContent = String(entry.number);
     });
     if (activeSetupPlayerEntry && ui.setupPlayerDialog.open) buildProfileCards();
   }
@@ -1632,6 +1691,7 @@
   }
 
   function validateNames() {
+    assignComputerNames();
     updateSetupColorCards();
     updateProfileCards();
     const activeEntries = playerEntries.filter(({ kindInput }) => kindInput.value !== 'empty');
@@ -1641,14 +1701,10 @@
     const colors = activeEntries.map(({ colorInput }) => colorInput.value);
     const colorsComplete = activeEntries.every(({ colorInput }) => Boolean(COLOR_META[colorInput.value]));
     const colorsUnique = colorsComplete && new Set(colors).size === colors.length;
-    const computerCount = activeEntries.filter(({ kindInput }) => kindInput.value === 'computer').length;
-    const hasHumanPlayer = activeEntries.some(({ kindInput }) => kindInput.value === 'human');
     ui.start.textContent = `开始${activeEntries.length}人局`;
     ui.start.disabled = !enoughPlayers
       || !namesUnique
-      || !colorsUnique
-      || computerCount > 1
-      || !hasHumanPlayer;
+      || !colorsUnique;
     ui.setupHelp.textContent = !enoughPlayers
       ? '请至少选择两位参与者。玩家姓名可以不填。'
       : !namesUnique
@@ -1657,11 +1713,7 @@
         ? '请为参与本局的玩家选择棋子颜色。'
       : !colorsUnique
         ? '参与本局的玩家需要选择不同的棋子颜色。'
-        : computerCount > 1
-          ? '每局最多加入一位简单电脑，请调整玩家类型。'
-        : !hasHumanPlayer
-          ? '至少保留一位真人玩家，才能开始游戏。'
-        : `${activeEntries.length}人局准备完成${activeEntries.some(({ kindInput }) => kindInput.value === 'computer') ? '；简单电脑只看当前一步。' : '，可以开始。'}`;
+        : `${activeEntries.length}人局准备完成${activeEntries.some(({ kindInput }) => kindInput.value === 'computer') ? '；电脑会依次自动走棋。' : '，可以开始。'}`;
   }
 
   function startGame() {
@@ -1678,8 +1730,6 @@
     if (
       assignments.length < 2
       || assignments.some(({ color }) => !COLOR_META[color])
-      || assignments.filter(({ kind }) => kind === 'computer').length > 1
-      || assignments.every(({ kind }) => kind === 'computer')
       || new Set(assignments.map(({ name }) => normalizeProfileName(name))).size !== assignments.length
       || new Set(assignments.map(({ color }) => color)).size !== assignments.length
     ) return;
@@ -1687,7 +1737,7 @@
 
     assignments.forEach((assignment) => {
       assignment.profile = assignment.kind === 'computer'
-        ? { id: 'computer-simple', name: assignment.name, balanceUnits: INITIAL_BALANCE_UNITS }
+        ? { id: `computer-seat-${assignment.number}`, name: assignment.name, balanceUnits: INITIAL_BALANCE_UNITS }
         : assignment.enteredName
           ? resolveProfile(assignment.name, assignment.profileId)
           : { id: `guest-seat-${assignment.number}`, name: assignment.name, balanceUnits: INITIAL_BALANCE_UNITS };
@@ -1898,6 +1948,30 @@
 
   const wait = (duration) => new Promise((resolve) => window.setTimeout(resolve, duration));
 
+  function rememberComputerRoute(route) {
+    const recent = computerRecentPositions.get(route.pieceId) || [];
+    computerRecentPositions.set(route.pieceId, [...recent, route.from, route.to].slice(-6));
+  }
+
+  function skipComputerTurn(computer, reason) {
+    consecutiveComputerPasses += 1;
+    computerRunning = false;
+    const unfinishedPlayers = players.filter(({ camp }) => !finished.includes(camp)).length;
+    if (consecutiveComputerPasses >= unfinishedPlayers) {
+      renderPieces();
+      updateTurnUi();
+      ui.status.textContent = '棋局暂时无法继续';
+      ui.list.textContent = '所有未完成的电脑玩家都没有合法走法，请重新开始。';
+      return;
+    }
+    nextActiveTurn();
+    renderPieces();
+    startTurnClock();
+    ui.status.textContent = `${playerName(computer)}${reason}，本回合跳过`;
+    ui.list.textContent = `轮到${playerLabel(now())}。`;
+    scheduleComputerTurn();
+  }
+
   function scheduleComputerTurn() {
     const token = ++computerTurnToken;
     if (gameOver || now().kind !== 'computer') return;
@@ -1921,16 +1995,11 @@
       color: computer.camp,
       maxRoutes: COMPUTER_MAX_ROUTES,
       maxJumpDepth: COMPUTER_MAX_JUMP_DEPTH,
+      recentPositions: computerRecentPositions,
     });
 
     if (!route) {
-      computerRunning = false;
-      nextActiveTurn();
-      renderPieces();
-      startTurnClock();
-      ui.status.textContent = `${playerName(computer)}没有合法走法，本回合跳过`;
-      ui.list.textContent = `轮到${playerLabel(now())}。`;
-      scheduleComputerTurn();
+      skipComputerTurn(computer, '没有合法走法');
       return;
     }
 
@@ -1950,15 +2019,11 @@
 
     if (token !== computerTurnToken || gameOver) return;
     if (!committed) {
-      computerRunning = false;
-      nextActiveTurn();
-      renderPieces();
-      startTurnClock();
-      ui.status.textContent = `${playerName(computer)}没有完成有效走法，本回合跳过`;
-      ui.list.textContent = `轮到${playerLabel(now())}。`;
-      scheduleComputerTurn();
+      skipComputerTurn(computer, '没有完成有效走法');
       return;
     }
+    consecutiveComputerPasses = 0;
+    rememberComputerRoute(route);
     ui.status.textContent = `${playerName(computer)}完成了这一步`;
     ui.list.textContent = route.moves.length > 1
       ? `连续跳跃 ${route.moves.length} 次，准备结束回合。`
@@ -1987,7 +2052,7 @@
       ? settleTurnReward({
         jumpUnits: turnRewardUnits,
         targetUnits: targetRewardUnits,
-        undoUsed: undoFeeApplied,
+        undoCount,
         undoFeeUnits: UNDO_FEE_UNITS,
       })
       : 0;

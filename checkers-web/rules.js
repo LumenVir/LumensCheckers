@@ -105,21 +105,24 @@
   }
 
   function createTargetCampKeys(color) {
-    const targetKeys = new Set();
-    const add = (q, r) => targetKeys.add(coordinateKey(q, r));
-
     if (!CAMP_ORDER.includes(color)) {
       throw new Error(`Unknown player color: ${color}`);
     }
+    return createCampKeys(OPPOSITE_CAMP[color]);
+  }
 
-    const targetCamp = OPPOSITE_CAMP[color];
+  function createCampKeys(camp) {
+    if (!CAMP_ORDER.includes(camp)) {
+      throw new Error(`Unknown camp: ${camp}`);
+    }
+    const campKeys = new Set();
     for (let depth = 1; depth <= 4; depth += 1) {
       for (let index = depth; index <= 4; index += 1) {
-        const [q, r] = campCoordinate(targetCamp, depth, index);
-        add(q, r);
+        const [q, r] = campCoordinate(camp, depth, index);
+        campKeys.add(coordinateKey(q, r));
       }
     }
-    return targetKeys;
+    return campKeys;
   }
 
   function createTargetRewardMap(color) {
@@ -149,6 +152,10 @@
     };
   }
 
+  function calculateComboReward({ freshJumpCount, comboStartsAt = 4 }) {
+    return Math.max(0, freshJumpCount - comboStartsAt + 1);
+  }
+
   function calculateTargetReward({ targetRewardMap, position, claimedKeys }) {
     if (!position || claimedKeys.has(position)) return 0;
     return targetRewardMap.get(position) || 0;
@@ -176,8 +183,15 @@
     return hours ? `${hours}:${clock}` : clock;
   }
 
-  function settleTurnReward({ jumpUnits, targetUnits = 0, undoUsed = false, undoFeeUnits = 5 }) {
-    return jumpUnits + targetUnits - (undoUsed ? undoFeeUnits : 0);
+  function settleTurnReward({
+    jumpUnits,
+    targetUnits = 0,
+    undoCount = 0,
+    freeUndoCount = 1,
+    undoFeeUnits = 5,
+  }) {
+    const chargedUndoCount = Math.max(0, undoCount - freeUndoCount);
+    return jumpUnits + targetUnits - chargedUndoCount * undoFeeUnits;
   }
 
   function calculateRankReward(rank) {
@@ -274,12 +288,60 @@
     ]));
   }
 
+  function calculateTargetAssignmentDistance({ positions, targetKeys }) {
+    const occupiedTargets = new Set(positions.filter((position) => targetKeys.has(position)));
+    const remainingPositions = positions.filter((position) => !occupiedTargets.has(position));
+    const targets = [...targetKeys].filter((target) => !occupiedTargets.has(target));
+    if (remainingPositions.length === 0) return 0;
+    if (remainingPositions.length > targets.length) return Number.POSITIVE_INFINITY;
+
+    if (remainingPositions.length > 4) {
+      const availableTargets = [...targets];
+      return remainingPositions.reduce((total, position) => {
+        let bestIndex = 0;
+        let bestDistance = Number.POSITIVE_INFINITY;
+        availableTargets.forEach((target, index) => {
+          const distance = axialDistance(position, target);
+          if (distance < bestDistance) {
+            bestDistance = distance;
+            bestIndex = index;
+          }
+        });
+        availableTargets.splice(bestIndex, 1);
+        return total + bestDistance;
+      }, 0);
+    }
+
+    let costs = new Map([[0, 0]]);
+    remainingPositions.forEach((position) => {
+      const nextCosts = new Map();
+      costs.forEach((cost, mask) => {
+        targets.forEach((target, index) => {
+          const bit = 1 << index;
+          if (mask & bit) return;
+          const nextMask = mask | bit;
+          const nextCost = cost + axialDistance(position, target);
+          if (nextCost < (nextCosts.get(nextMask) ?? Number.POSITIVE_INFINITY)) {
+            nextCosts.set(nextMask, nextCost);
+          }
+        });
+      });
+      costs = nextCosts;
+    });
+    return Math.min(...costs.values());
+  }
+
   function createSimpleComputerTeamContext({ ownPieces, targetKeys, targetDistanceMap }) {
     const distances = ownPieces.map(([position]) => targetDistanceMap.get(position));
     return {
       averageDistance: distances.reduce((sum, distance) => sum + distance, 0) / distances.length,
       maximumDistance: Math.max(...distances),
       targetPieceCount: ownPieces.filter(([position]) => targetKeys.has(position)).length,
+      assignmentDistance: calculateTargetAssignmentDistance({
+        positions: ownPieces.map(([position]) => position),
+        targetKeys,
+      }),
+      ownPositions: ownPieces.map(([position, piece]) => [position, piece.id]),
     };
   }
 
@@ -289,14 +351,17 @@
     targetRewardMap,
     targetDistanceMap,
     teamContext,
+    recentPositions,
   }) {
     const startDistance = targetDistanceMap.get(route.from);
     const finishDistance = targetDistanceMap.get(route.to);
     const advancement = startDistance - finishDistance;
     const startedInTarget = targetKeys.has(route.from);
     const finishedInTarget = targetKeys.has(route.to);
-    const enteredTargetBonus = !startedInTarget && finishedInTarget ? 80 : 0;
-    const leftTargetPenalty = startedInTarget && !finishedInTarget ? 400 : 0;
+    const enteredTargetBonus = !startedInTarget && finishedInTarget
+      ? 180 + teamContext.targetPieceCount * 28
+      : 0;
+    const leftTargetPenalty = startedInTarget && !finishedInTarget ? 5000 : 0;
     const targetDepth = targetRewardMap.get(route.to) || 0;
     const jumpCount = route.moves.filter(({ rule }) => rule.type === 'jump').length;
     const travelDistance = route.moves.reduce((sum, { rule }) => (
@@ -305,14 +370,27 @@
     const laggingDistance = Math.max(0, startDistance - teamContext.averageDistance);
     const isRearmostPiece = startDistance === teamContext.maximumDistance;
     const completionPressure = teamContext.targetPieceCount;
+    const nextPositions = teamContext.ownPositions.map(([position, pieceId]) => (
+      pieceId === route.pieceId ? route.to : position
+    ));
+    const assignmentAdvancement = teamContext.assignmentDistance - calculateTargetAssignmentDistance({
+      positions: nextPositions,
+      targetKeys,
+    });
+    const recentPiecePositions = recentPositions?.get(route.pieceId) || [];
+    const repetitionPenalty = recentPiecePositions.includes(route.to)
+      ? 700 + completionPressure * 60
+      : 0;
     const formationBonus = advancement > 0
       ? laggingDistance * (16 + completionPressure * 4)
         + (isRearmostPiece ? 24 + completionPressure * 3 : 0)
       : 0;
 
-    return advancement * 100
+    return assignmentAdvancement * (120 + completionPressure * 28)
+      + advancement * 35
       + enteredTargetBonus
       - leftTargetPenalty
+      - repetitionPenalty
       + targetDepth * 4
       + jumpCount * 3
       + travelDistance
@@ -325,8 +403,12 @@
     color,
     maxRoutes = 120,
     maxJumpDepth = 12,
+    recentPositions = new Map(),
   }) {
     const targetKeys = createTargetCampKeys(color);
+    const forbiddenOuterKeys = new Set(CAMP_ORDER
+      .filter((camp) => camp !== color && camp !== OPPOSITE_CAMP[color])
+      .flatMap((camp) => [...createCampKeys(camp)]));
     const targetRewardMap = createTargetRewardMap(color);
     const targetDistanceMap = createTargetDistanceMap(boardKeys, targetKeys);
     const ownPieces = [...pieces.entries()].filter(([, piece]) => piece.color === color);
@@ -340,6 +422,7 @@
       targetRewardMap,
       targetDistanceMap,
       teamContext,
+      recentPositions,
       route: {
         pieceId: piece.id,
         from,
@@ -413,7 +496,9 @@
       routes.push(...pieceRoutes.slice(0, Math.min(perPieceLimit, remaining)));
     }
 
-    return routes.map((route) => ({
+    return routes
+      .filter((route) => !forbiddenOuterKeys.has(route.to))
+      .map((route) => ({
       ...route,
       score: scoreSimpleComputerRoute({
         route,
@@ -421,6 +506,7 @@
         targetRewardMap,
         targetDistanceMap,
         teamContext,
+        recentPositions,
       }),
     }));
   }
@@ -439,11 +525,14 @@
     DIRECTIONS,
     OPPOSITE_CAMP,
     applyCoinEarnings,
+    calculateComboReward,
     chooseSimpleComputerRoute,
+    calculateTargetAssignmentDistance,
     calculateJumpReward,
     calculateLegalMoves,
     calculateRankReward,
     calculateTargetReward,
+    createCampKeys,
     coordinateKey,
     createBoardKeys,
     createPlayerCampLayout,
